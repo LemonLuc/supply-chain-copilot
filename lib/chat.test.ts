@@ -48,4 +48,19 @@ describe("chat grounding", () => {
     expect(reply).toContain("Escalate Supplier A");
     expect(reply).toContain("demo mode");
   });
+
+  it("answers supplier impact questions only when the context permits it", () => {
+    const procurementReply = generateMockReply(
+      "What is Supplier A's impact?",
+      buildAppContext("risks", "procurement"),
+    );
+    const logisticsReply = generateMockReply(
+      "What is Supplier A's impact?",
+      buildAppContext("risks", "logistics"),
+    );
+
+    expect(procurementReply).toContain("$1.6M revenue at risk");
+    expect(logisticsReply).not.toContain("$1.6M revenue at risk");
+    expect(logisticsReply).toContain("not available to your current persona");
+  });
 });

@@ -20,7 +20,6 @@ export type Workflow = {
   actions: string[];
   highlights: string[];
   talk: Array<[string, string]>;
-  architecture: Array<[string, string]>;
 };
 
 export const suppliers: Supplier[] = [
@@ -113,14 +112,6 @@ export const workflows: Record<WorkflowKey, Workflow> = {
       ["Evidence", "Show how it blends supplier status, logistics signals, inventory cover, and business impact."],
       ["Decision", "End with the concrete triage list: escalate, monitor, and open corrective action."],
     ],
-    architecture: [
-      ["Users", "Planner / executive asks for this week's supplier risks."],
-      ["ChatGPT", "Control tower turns the question into a structured supply-chain task."],
-      ["Responses API", "Agent layer plans retrieval, risk scoring, and answer format."],
-      ["File Search", "Grounding layer retrieves supplier notes, scorecards, and policies."],
-      ["Risk Engine", "Analysis ranks suppliers by disruption, recoverability, and business impact."],
-      ["Policy Engine", "Guardrails require evidence, confidence, and human-owned actions."],
-    ],
   },
   delay: {
     question: "What happens if Supplier A is delayed by 2 weeks?",
@@ -144,14 +135,6 @@ export const workflows: Record<WorkflowKey, Workflow> = {
       ["Evidence", "Call out inventory cover, single-source exposure, and the projected production gap."],
       ["Decision", "Explain the mitigation package and why the copilot balances service level against cost."],
     ],
-    architecture: [
-      ["Users", "Planner asks about a 2-week Supplier A delay."],
-      ["ChatGPT", "Control tower captures the scenario in business language."],
-      ["Responses API", "Agent layer calls retrieval plus simulation tools."],
-      ["File Search", "Grounding layer pulls part criticality, inventory cover, and customer priority rules."],
-      ["Scenario Engine", "Simulation estimates shortage timing, cost, and affected orders."],
-      ["Policy Engine", "Guardrails keep recommendations within approval and allocation rules."],
-    ],
   },
   consolidate: {
     question: "Which suppliers should we consolidate, and what is the risk impact?",
@@ -174,14 +157,6 @@ export const workflows: Record<WorkflowKey, Workflow> = {
       ["Frame", "Ask for a strategic recommendation, not just an alert list."],
       ["Evidence", "Show which categories have low switching cost and available backup capacity."],
       ["Decision", "Make the tradeoff visible: savings where safe, resilience where fragile."],
-    ],
-    architecture: [
-      ["Users", "Procurement leader asks where consolidation is safe."],
-      ["ChatGPT", "Control tower frames the tradeoff between savings and resilience."],
-      ["Responses API", "Agent layer compares suppliers, risks, and policy constraints."],
-      ["File Search", "Grounding layer retrieves contracts, scorecards, and category strategy."],
-      ["Risk Engine", "Analysis estimates concentration risk before and after consolidation."],
-      ["Policy Engine", "Guardrails block recommendations that remove critical redundancy."],
     ],
   },
 };

@@ -48,8 +48,19 @@ ${JSON.stringify(context, null, 2)}`;
 export function generateMockReply(question: string, context: AppContext): string {
   const [firstAction, secondAction] = context.recommendedActions;
   const focus = context.highlightedSuppliers.join(", ");
+  const normalizedQuestion = question.toLowerCase();
+  const requestedSupplier = context.suppliers.find((supplier) =>
+    normalizedQuestion.includes(supplier.name.toLowerCase()),
+  );
+  const impactAnswer = normalizedQuestion.includes("impact")
+    ? requestedSupplier && "impact" in requestedSupplier
+      ? `${requestedSupplier.name}'s recorded impact is ${requestedSupplier.impact}.`
+      : "Supplier-level impact data is not available to your current persona."
+    : "";
 
   return `Based on the current ${context.workflow.key} view, ${context.answer.headline}
+
+${impactAnswer ? `${impactAnswer}\n` : ""}
 
 Start here: ${firstAction}${secondAction ? ` Then ${secondAction.charAt(0).toLowerCase()}${secondAction.slice(1)}` : ""}
 

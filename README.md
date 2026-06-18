@@ -9,6 +9,7 @@ Context-aware supply chain copilot for inventory, cost, delivery, and risk decis
 - OpenAI model selector for GPT-5.5, GPT-5.4, GPT-5.4 mini, and GPT-5.4 nano.
 - Reasoning selector from none through extra high.
 - Server-built application context for every request.
+- Demo personas with least-privilege supplier dataset access.
 - Deterministic demo mode when no live API key is configured.
 - Extension points in `lib/chat-extensions.ts` for MCP tools and RAG context.
 
@@ -114,7 +115,9 @@ flowchart LR
   API --> MOCK["Deterministic demo stream"]
 ```
 
-Each request sends only the selected workflow key plus model and reasoning preferences. The server rebuilds the trusted supplier snapshot, preventing browser-provided data from becoming the source of truth.
+Each request sends the selected workflow and persona IDs plus model and reasoning preferences. The server rebuilds and filters the trusted supplier snapshot, preventing browser-provided data from becoming the source of truth.
+
+The Persona selector defaults to Standard logistics employee. Procurement leads can access supplier-level impact data; standard logistics employees cannot see that table column or receive it in chat context.
 
 To add retrieval, return grounded passages from `loadExternalContext()`. To add MCP or application actions, register AI SDK tools in `getChatTools()`.
 

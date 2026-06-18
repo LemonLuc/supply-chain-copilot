@@ -8,6 +8,7 @@ import { useMemo, useState, type FormEvent } from "react";
 import { supportedModels, thinkingLevels, type SupportedModel, type ThinkingLevel } from "@/lib/chat";
 import { buildAppContext } from "@/lib/context";
 import { suppliers, workflows, type WorkflowKey } from "@/lib/demo-data";
+import { getPersonaPolicy, personas, type PersonaId } from "@/lib/permissions";
 
 const workflowLabels: Record<WorkflowKey, string> = {
   risks: "Weekly risk scan",
@@ -30,13 +31,15 @@ function messageText(message: UIMessage): string {
 
 export function SupplyChainApp() {
   const [workflowKey, setWorkflowKey] = useState<WorkflowKey>("risks");
+  const [persona, setPersona] = useState<PersonaId>("logistics");
   const [model, setModel] = useState<SupportedModel>("gpt-5.4-mini");
   const [thinking, setThinking] = useState<ThinkingLevel>("medium");
   const [input, setInput] = useState("");
   const transport = useMemo(() => new DefaultChatTransport({ api: "/api/chat" }), []);
   const { messages, sendMessage, status, error, stop, setMessages, clearError } = useChat({ transport });
   const workflow = workflows[workflowKey];
-  const appContext = buildAppContext(workflowKey);
+  const appContext = buildAppContext(workflowKey, persona);
+  const personaPolicy = getPersonaPolicy(persona);
   const isBusy = status === "submitted" || status === "streaming";
 
   async function submitPrompt(prompt: string) {
@@ -47,13 +50,20 @@ export function SupplyChainApp() {
     setInput("");
     await sendMessage(
       { text: nextPrompt },
-      { body: { workflowKey, model, thinking } },
+      { body: { workflowKey, persona, model, thinking } },
     );
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void submitPrompt(input);
+  }
+
+  function handlePersonaChange(nextPersona: PersonaId) {
+    void stop();
+    setMessages([]);
+    clearError();
+    setPersona(nextPersona);
   }
 
   return (
@@ -64,6 +74,13 @@ export function SupplyChainApp() {
           <h1>Supply Chain Hub</h1>
           <p className="lede">Supplier risk triage, scenario planning, and sourcing decisions.</p>
         </div>
+
+        <label className="persona-selector">
+          <span>Persona</span>
+          <select value={persona} onChange={(event) => handlePersonaChange(event.target.value as PersonaId)}>
+            {personas.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+          </select>
+        </label>
 
         <nav className="workflow-nav" aria-label="Demo workflows">
           {(Object.keys(workflows) as WorkflowKey[]).map((key, index) => (
@@ -188,25 +205,16 @@ export function SupplyChainApp() {
         </section>
 
         <section className="content-section">
-          <div className="section-title"><div><p className="eyebrow">Architecture trace</p><h3>How the decision flows</h3></div></div>
-          <div className="architecture-trace">
-            {workflow.architecture.map(([layer, description]) => (
-              <div className="architecture-node" key={layer}><span>{layer}</span><strong>{layer}</strong><p>{description}</p></div>
-            ))}
-          </div>
-        </section>
-
-        <section className="content-section">
           <div className="section-title"><div><p className="eyebrow">Evidence</p><h3>Supplier risk table</h3></div></div>
           <div className="table-wrap">
             <table>
-              <thead><tr><th>Supplier</th><th>Category</th><th>Region</th><th>Risk</th><th>Signals</th><th>Impact</th></tr></thead>
+              <thead><tr><th>Supplier</th><th>Category</th><th>Region</th><th>Risk</th><th>Signals</th>{personaPolicy.canViewSupplierImpact && <th>Impact</th>}</tr></thead>
               <tbody>
                 {suppliers.map((supplier) => (
                   <tr className={workflow.highlights.includes(supplier.name) ? "highlight-row" : ""} key={supplier.name}>
                     <td><strong>{supplier.name}</strong></td><td>{supplier.category}</td><td>{supplier.region}</td>
                     <td><span className={`risk-chip risk-${supplier.risk.toLowerCase()}`}>{supplier.risk}</span></td>
-                    <td>{supplier.signals}</td><td>{supplier.impact}</td>
+                    <td>{supplier.signals}</td>{personaPolicy.canViewSupplierImpact && <td>{supplier.impact}</td>}
                   </tr>
                 ))}
               </tbody>
