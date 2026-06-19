@@ -1,10 +1,44 @@
-import { workflowKeys, workflows, type WorkflowKey } from "./demo-data";
+import { workflowKeys, workflows, type WorkflowKey, type WorkflowSource } from "./demo-data";
 import { canAccessWorkflow, getPersonaPolicy, normalizePersona } from "./permissions";
 
 export function normalizeWorkflowKey(value: unknown): WorkflowKey {
   return typeof value === "string" && workflowKeys.includes(value as WorkflowKey)
     ? (value as WorkflowKey)
     : "risks";
+}
+
+export type RoleToolSource = WorkflowSource & {
+  toolId: string;
+  workflowKey: WorkflowKey;
+  workflowLabel: string;
+};
+
+export function buildRoleToolSources(personaValue?: unknown): RoleToolSource[] {
+  const policy = getPersonaPolicy(personaValue);
+
+  return policy.allowedWorkflows.flatMap((workflowKey) =>
+    workflows[workflowKey].sources.map((source) => ({
+      ...source,
+      toolId: `${workflowKey}:${source.id}`,
+      workflowKey,
+      workflowLabel: workflows[workflowKey].navLabel,
+    })),
+  );
+}
+
+export function resolveWorkflowForPrompt(prompt: string, personaValue?: unknown): WorkflowKey {
+  const policy = getPersonaPolicy(personaValue);
+  const normalizedPrompt = prompt.toLowerCase();
+  const candidates: Array<[WorkflowKey, string[]]> = [
+    ["consolidate", ["heat map", "heatmap", "consolidate", "portfolio", "tail-spend", "resilience"]],
+    ["delay", ["alternative", "alternatives", "alternate", "turret", "supplier overview", "delayed", "delay"]],
+    ["risks", ["risk", "delivery", "shipment", "carrier", "milestone", "freight", "fedex", "dhl"]],
+  ];
+  const match = candidates.find(([workflowKey, keywords]) =>
+    policy.allowedWorkflows.includes(workflowKey) && keywords.some((keyword) => normalizedPrompt.includes(keyword)),
+  );
+
+  return match?.[0] ?? policy.allowedWorkflows[0] ?? "risks";
 }
 
 const sourceActivityTokens: Record<string, string[]> = {

@@ -72,16 +72,28 @@ function mockChatStreamWithMarkdownTable() {
 }
 
 describe("SupplyChainApp", () => {
-  it("shows the demo access switch and uses the AI mark in the sidebar", () => {
+  it("shows the demo access switch and signed-in user in the top-right header", () => {
     render(<SupplyChainApp currentUser={mockUsers.logistics} />);
 
     expect(screen.getByLabelText("Demo identity")).toHaveValue("logistics");
-    expect(screen.getByText("Lukas Weber")).toBeInTheDocument();
+    expect(within(screen.getByLabelText("User and role controls")).getByText("Lukas Weber")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Lukas Weber avatar" })).toHaveAttribute("src", "/avatars/lukas-weber.png");
     expect(screen.queryByText("LW")).not.toBeInTheDocument();
-    expect(screen.getAllByLabelText("Supply Chain Hub AI mark")).toHaveLength(2);
-    expect(document.querySelectorAll(".ai-mark svg")).toHaveLength(2);
+    expect(screen.getAllByLabelText("Supply Chain Hub AI mark")).toHaveLength(1);
+    expect(document.querySelectorAll(".ai-mark svg")).toHaveLength(1);
+    expect(screen.getByRole("heading", { name: "Ask Supply Chain Hub" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Supply Chain Hub AI mark").closest(".app-title")).not.toBeNull();
     expect(screen.queryByText("SH")).not.toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "Supply chain workflows" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Intranet operations")).not.toBeInTheDocument();
+    expect(screen.queryByText("Role-scoped console")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Ask across the sources authorized/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Supply Chain Hub resolves each prompt/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Supply Chain Hub AI mark").compareDocumentPosition(screen.getByLabelText("User and role controls"))).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(screen.queryByText(/authorized data domains?/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Authenticated intranet session")).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("Demo identity"), { target: { value: "procurement" } });
     expect(screen.getByText("Dana Narid")).toBeInTheDocument();
@@ -92,22 +104,24 @@ describe("SupplyChainApp", () => {
     expect(screen.getByRole("option", { name: "Procurement Team Lead" })).toBeInTheDocument();
   });
 
-  it("keeps the weekly risk radar operational and hides results until a prompt runs", async () => {
+  it("keeps the weekly risk radar operational and hides the empty placeholder until data exists", async () => {
     mockChatStream();
     render(<SupplyChainApp currentUser={mockUsers.logistics} />);
 
     expect(screen.queryByRole("heading", { name: "Before" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "With Supply Chain Hub" })).not.toBeInTheDocument();
-    expect(screen.getByText(/Ask a question to retrieve authorized live data/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Ask a question to retrieve authorized live data/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("No analysis yet")).not.toBeInTheDocument();
     expect(screen.queryByText("Delivery exception found")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /Is there any delivery risk this week/i }));
 
     await waitFor(() => expect(screen.getByText("Delivery exception found")).toBeInTheDocument());
     expect(screen.getByText(/DHL Freight shipment 00340434161094000012/i)).toBeInTheDocument();
-    expect(screen.getByText("Agent activity")).toBeInTheDocument();
+    expect(screen.queryByText("Agent activity")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Draft email to DHL Freight/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Update SAP promised date/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Which incoming shipment needs attention before Wednesday/i })).toBeInTheDocument();
   });
 
   it("never shows financial values or quantified business risk to logistics planners", async () => {
@@ -125,34 +139,54 @@ describe("SupplyChainApp", () => {
     expect(screen.queryByText(/financial exposure/i)).not.toBeInTheDocument();
   });
 
-  it("locks supplier alternatives and executive optimization for logistics planners", () => {
+  it("removes workflow navigation and limits logistics planners to their authorized source set", () => {
     render(<SupplyChainApp currentUser={mockUsers.logistics} />);
 
-    expect(screen.getByRole("button", { name: /Supplier alternatives/i })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /Executive supplier portfolio/i })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: /Supplier alternatives/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Executive supplier portfolio/i })).not.toBeInTheDocument();
+    expect(screen.getByText("Currently 4 out of 6 tools selected, choose authorized sources below")).toBeInTheDocument();
+    expect(screen.queryByText(/Risk radar/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Tool access/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Choose authorized sources" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "SELECT TOOLS" })).toBeInTheDocument();
+    expect(screen.getByLabelText("SAP S/4HANA")).toBeChecked();
+    expect(screen.getByLabelText("DHL Freight")).toBeChecked();
+    expect(screen.queryByLabelText("Supplier qualification database")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Contract repository")).not.toBeInTheDocument();
   });
 
-  it("unlocks procurement workflows and shows source authorization controls", () => {
+  it("shows procurement sources without workflow navigation and routes alternate prompts to the right data", async () => {
+    const fetchMock = mockChatStream();
     render(<SupplyChainApp currentUser={mockUsers.procurement} />);
 
-    fireEvent.click(screen.getByRole("button", { name: /Supplier alternatives/i }));
-    expect(screen.getByRole("heading", { name: /What are our approved alternatives/i })).toBeInTheDocument();
-    expect(screen.getByLabelText("SAP S/4HANA")).toBeChecked();
+    expect(screen.getAllByLabelText("SAP S/4HANA")).toHaveLength(2);
+    expect(screen.getAllByLabelText("SAP S/4HANA").every((input) => input instanceof HTMLInputElement && input.checked)).toBe(true);
     expect(screen.getByLabelText("Supplier qualification database")).toBeChecked();
+    expect(screen.queryByRole("button", { name: /Executive supplier portfolio/i })).not.toBeInTheDocument();
 
-    expect(screen.getByRole("button", { name: /Executive supplier portfolio/i })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: /What are our approved alternatives/i }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    const requestBody = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    expect(requestBody.workflowKey).toBe("delay");
+    expect(requestBody.selectedSourceIds).toEqual(["sap", "quality", "excel", "capacity", "outlook"]);
   });
 
-  it("reveals the executive heat map and human approval gate only after a prompt", async () => {
-    mockChatStream();
+  it("reveals the executive heat map from merged executive sources only after a prompt", async () => {
+    const fetchMock = mockChatStream();
     render(<SupplyChainApp currentUser={mockUsers.executive} />);
 
-    fireEvent.click(screen.getByRole("button", { name: /Executive supplier portfolio/i }));
+    expect(screen.getByLabelText("DHL Freight")).toBeChecked();
+    expect(screen.getByLabelText("Supplier qualification database")).toBeChecked();
+    expect(screen.getByLabelText("Contract repository")).toBeChecked();
     expect(screen.queryByText("Supplier portfolio heat map")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /Give me a heat map/i }));
 
     await waitFor(() => expect(screen.getByText("Supplier portfolio heat map")).toBeInTheDocument());
+    const requestBody = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    expect(requestBody.workflowKey).toBe("consolidate");
+    expect(requestBody.selectedSourceIds).toEqual(["sap", "contracts", "quality", "resilience", "policy"]);
     expect(screen.getByText("C-level approval required")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Request executive review/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Terminate contract now/i })).not.toBeInTheDocument();
@@ -190,15 +224,15 @@ describe("SupplyChainApp", () => {
     expect(screen.getByText("Checked authorized workflow context and source filters.")).toBeInTheDocument();
   });
 
-  it("does not show a reasoning panel when the API does not stream reasoning", async () => {
+  it("always shows fallback reasoning when the API does not stream reasoning", async () => {
     mockChatStreamWithMarkdownTable();
     render(<SupplyChainApp currentUser={mockUsers.logistics} />);
 
     fireEvent.click(screen.getByRole("button", { name: /Is there any delivery risk this week/i }));
 
     await screen.findByRole("table");
-    expect(screen.queryByRole("button", { name: "Show reasoning" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Hide reasoning" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Hide reasoning" })).toBeInTheDocument();
+    expect(screen.getByText("Checked role permissions, selected tools, retrieved grounded records, and prepared the response summary.")).toBeInTheDocument();
     expect(screen.queryByText("Traceability process")).not.toBeInTheDocument();
   });
 
@@ -233,6 +267,9 @@ describe("SupplyChainApp", () => {
     render(<SupplyChainApp currentUser={mockUsers.logistics} />);
 
     fireEvent.click(screen.getByLabelText("DHL Freight"));
+
+    expect(screen.getByText("Currently 3 out of 6 tools selected, choose authorized sources below")).toBeInTheDocument();
+
     fireEvent.click(screen.getByRole("button", { name: /Is there any delivery risk this week/i }));
 
     const results = await screen.findByLabelText("Supply Chain Hub results");
@@ -243,5 +280,50 @@ describe("SupplyChainApp", () => {
     expect(within(results).queryByText(/00340434161094000012/i)).not.toBeInTheDocument();
     expect(within(results).queryByText(/PO 4500872319/i)).not.toBeInTheDocument();
     expect(within(results).getAllByText(/FedEx Priority/i).length).toBeGreaterThan(0);
+  });
+
+  it("routes operational draft approvals from logistics to Dana and returns the decision to the requester", async () => {
+    mockChatStream();
+    render(<SupplyChainApp currentUser={mockUsers.logistics} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Is there any delivery risk this week/i }));
+    await waitFor(() => expect(screen.getByText("Delivery exception found")).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: /Notify logistics team lead/i }));
+
+    expect(screen.getByText(/Approval request sent to Dana Narid/i)).toBeInTheDocument();
+    expect(screen.getByText("Submitted requests")).toBeInTheDocument();
+    expect(screen.getByText("Pending review by Dana Narid")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Approve Notify logistics team lead/i })).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Demo identity"), { target: { value: "procurement" } });
+
+    expect(screen.getByText("Approval queue")).toBeInTheDocument();
+    expect(screen.getByText("From Lukas Weber")).toBeInTheDocument();
+    expect(screen.getByText(/DHL Freight shipment 00340434161094000012/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Approve Notify logistics team lead/i }));
+
+    expect(screen.getByText("Approved by Dana Narid")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Demo identity"), { target: { value: "logistics" } });
+
+    expect(screen.getByText("Submitted requests")).toBeInTheDocument();
+    expect(screen.getByText("Approved by Dana Narid")).toBeInTheDocument();
+  });
+
+  it("routes executive review requests to Lucía with approve and deny controls", async () => {
+    mockChatStream();
+    render(<SupplyChainApp currentUser={mockUsers.executive} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Give me a heat map/i }));
+    await waitFor(() => expect(screen.getByText("Supplier portfolio heat map")).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: /Request executive review/i }));
+
+    expect(screen.getByText("Approval queue")).toBeInTheDocument();
+    expect(screen.getByText("Pending review by Dr. Lucía López")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Approve Request executive review/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Deny Request executive review/i })).toBeInTheDocument();
   });
 });

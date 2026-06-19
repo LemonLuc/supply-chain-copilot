@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildAppContext, normalizeWorkflowKey } from "./context";
+import { buildAppContext, buildRoleToolSources, normalizeWorkflowKey, resolveWorkflowForPrompt } from "./context";
 
 describe("buildAppContext", () => {
   it("builds a least-privilege operational context for logistics", () => {
@@ -86,6 +86,42 @@ describe("buildAppContext", () => {
     expect(context.answer.headline).toBe("Delivery exception found");
     expect(JSON.stringify(context)).not.toContain("Supplier H");
     expect(JSON.stringify(context)).not.toContain("C-level approval required");
+  });
+});
+
+describe("buildRoleToolSources", () => {
+  it("exposes only risk-radar sources to logistics planners", () => {
+    const sources = buildRoleToolSources("logistics");
+
+    expect(sources.map((source) => source.toolId)).toEqual([
+      "risks:sap",
+      "risks:dhl",
+      "risks:fedex",
+      "risks:ups",
+      "risks:warehouse",
+      "risks:outlook",
+    ]);
+    expect(sources.map((source) => source.workflowKey)).not.toContain("delay");
+    expect(sources.map((source) => source.workflowKey)).not.toContain("consolidate");
+  });
+
+  it("exposes sources from all three authorized workflows to executives", () => {
+    const sources = buildRoleToolSources("executive");
+
+    expect(sources.some((source) => source.toolId === "risks:dhl")).toBe(true);
+    expect(sources.some((source) => source.toolId === "delay:quality")).toBe(true);
+    expect(sources.some((source) => source.toolId === "consolidate:contracts")).toBe(true);
+    expect(sources).toHaveLength(18);
+  });
+});
+
+describe("resolveWorkflowForPrompt", () => {
+  it("selects the supplier alternatives workflow when an authorized prompt asks for alternates", () => {
+    expect(resolveWorkflowForPrompt("Which approved alternatives can cover the turret delay?", "procurement")).toBe("delay");
+  });
+
+  it("falls back to an authorized workflow when the matching workflow is restricted", () => {
+    expect(resolveWorkflowForPrompt("Give me a cost-versus-resilience heat map.", "procurement")).toBe("risks");
   });
 });
 
