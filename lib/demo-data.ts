@@ -14,6 +14,7 @@ export type ActivityStep = {
   tool: string;
   detail: string;
   result: string;
+  sourceIds?: string[];
 };
 
 export type AnalysisTraceStep = {
@@ -26,6 +27,7 @@ export type WorkflowAction = {
   label: string;
   detail: string;
   kind: "draft" | "update" | "share" | "approval";
+  sourceIds?: string[];
 };
 
 export type ResultRow = {
@@ -33,6 +35,7 @@ export type ResultRow = {
   detail: string;
   status: string;
   evidence: string;
+  sourceIds: string[];
   financial?: string;
 };
 
@@ -92,10 +95,10 @@ export const workflows: Record<WorkflowKey, Workflow> = {
       { id: "outlook", name: "Outlook", category: "Microsoft 365 MCP", detail: "Draft operational follow-ups", selected: false },
     ],
     activity: [
-      { tool: "SAP S/4HANA MCP", detail: "Read PO 4500872319 and material N-FK5-110-32", result: "480 blanks due 24 June" },
-      { tool: "DHL Freight MCP", detail: "Checked shipment 00340434161094000012", result: "Hub departure missed by 19 hours" },
-      { tool: "FedEx MCP", detail: "Checked backup parcel 771924603189", result: "On schedule for 23 June" },
-      { tool: "SAP EWM MCP", detail: "Read Jena receiving stock and reservations", result: "2.5 production days available" },
+      { tool: "SAP S/4HANA MCP", detail: "Read PO 4500872319 and material N-FK5-110-32", result: "480 blanks due 24 June", sourceIds: ["sap", "dhl"] },
+      { tool: "DHL Freight MCP", detail: "Checked shipment 00340434161094000012", result: "Hub departure missed by 19 hours", sourceIds: ["dhl"] },
+      { tool: "FedEx MCP", detail: "Checked backup parcel 771924603189", result: "On schedule for 23 June", sourceIds: ["fedex"] },
+      { tool: "SAP EWM MCP", detail: "Read Jena receiving stock and reservations", result: "2.5 production days available", sourceIds: ["warehouse"] },
     ],
     analysisTrace: [
       { label: "Understand request", detail: "Identify material, product context and requested delivery window.", outcome: "N-FK5-110-32 · current week" },
@@ -117,9 +120,9 @@ export const workflows: Record<WorkflowKey, Workflow> = {
       ["Avoided downtime", "€185,000"],
     ],
     actions: [
-      { label: "Draft email to DHL Freight", detail: "Ask for recovery routing and confirmed ETA.", kind: "draft" },
+      { label: "Draft email to DHL Freight", detail: "Ask for recovery routing and confirmed ETA.", kind: "draft", sourceIds: ["dhl"] },
       { label: "Notify logistics team lead", detail: "Prepare a concise Teams and email update.", kind: "draft" },
-      { label: "Update SAP promised date", detail: "Write 25 June to PO 4500872319 after confirmation.", kind: "update" },
+      { label: "Update SAP promised date", detail: "Write 25 June to PO 4500872319 after confirmation.", kind: "update", sourceIds: ["sap", "dhl"] },
     ],
     rows: [
       {
@@ -127,6 +130,7 @@ export const workflows: Record<WorkflowKey, Workflow> = {
         detail: "480 N-FK5 optical glass blanks",
         status: "Attention",
         evidence: "Leipzig departure missed; ETA moved from 24 to 25 June",
+        sourceIds: ["dhl"],
         financial: "€185K downtime exposure",
       },
       {
@@ -134,6 +138,7 @@ export const workflows: Record<WorkflowKey, Workflow> = {
         detail: "60 N-FK5 optical glass blanks",
         status: "On schedule",
         evidence: "Departed Frankfurt; delivery due 23 June, 10:30",
+        sourceIds: ["fedex"],
         financial: "€8.4K expedite charge",
       },
     ],
@@ -196,6 +201,7 @@ export const workflows: Record<WorkflowKey, Workflow> = {
         detail: "Approved alternate objective turret",
         status: "Conditional approval",
         evidence: "8 units in 6 days; incoming torque test required",
+        sourceIds: ["quality", "capacity", "sap"],
         financial: "€2,700 premium per unit",
       },
       {
@@ -203,6 +209,7 @@ export const workflows: Record<WorkflowKey, Workflow> = {
         detail: "Potential second alternate",
         status: "Not approved",
         evidence: "Dimensional review complete; endurance validation still open",
+        sourceIds: ["quality", "excel"],
         financial: "Commercial quote pending",
       },
     ],
@@ -265,6 +272,7 @@ export const workflows: Record<WorkflowKey, Workflow> = {
         detail: "Suppliers H, J and K",
         status: "Consolidation candidate",
         evidence: "Validated capacity at two suppliers; stable service and quality",
+        sourceIds: ["sap", "contracts", "quality", "resilience", "policy"],
         financial: "€410K–€520K opportunity",
       },
       {
@@ -272,6 +280,7 @@ export const workflows: Record<WorkflowKey, Workflow> = {
         detail: "Suppliers M, N and P",
         status: "Consolidation candidate",
         evidence: "Interchangeable drawings; three qualified sources in Germany",
+        sourceIds: ["sap", "contracts", "quality", "resilience", "policy"],
         financial: "€330K–€440K opportunity",
       },
       {
@@ -279,6 +288,7 @@ export const workflows: Record<WorkflowKey, Workflow> = {
         detail: "Suppliers A and Q",
         status: "Protected",
         evidence: "Limited qualified furnace capacity; dual-source guardrail applies",
+        sourceIds: ["sap", "contracts", "quality", "resilience", "policy"],
         financial: "No consolidation recommended",
       },
     ],

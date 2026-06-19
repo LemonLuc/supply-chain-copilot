@@ -7,6 +7,7 @@ import {
   Bot,
   Boxes,
   Check,
+  ChevronDown,
   ChevronRight,
   CircleUserRound,
   Database,
@@ -23,10 +24,13 @@ import {
   Truck,
   type LucideIcon,
 } from "lucide-react";
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 import { mockUsers, type CurrentUser } from "@/lib/auth";
 import { supportedModels, thinkingLevels, type SupportedModel, type ThinkingLevel } from "@/lib/chat";
+import { buildAppContext } from "@/lib/context";
 import { workflows, type WorkflowAction, type WorkflowKey } from "@/lib/demo-data";
 import { canAccessWorkflow, getPersonaPolicy, personas, type PersonaId } from "@/lib/permissions";
 
@@ -41,6 +45,59 @@ function messageText(message: UIMessage): string {
     .filter((part): part is Extract<(typeof message.parts)[number], { type: "text" }> => part.type === "text")
     .map((part) => part.text)
     .join("\n");
+}
+
+function messageReasoningParts(message: UIMessage) {
+  return message.parts.filter(
+    (part): part is Extract<(typeof message.parts)[number], { type: "reasoning" }> =>
+      part.type === "reasoning" && part.text.trim().length > 0,
+  );
+}
+
+function ReasoningSummary({ message }: { message: UIMessage }) {
+  const reasoningParts = messageReasoningParts(message);
+  const isFinished = reasoningParts.length > 0 && reasoningParts.every((part) => part.state === "done");
+  const [expanded, setExpanded] = useState(() => !isFinished);
+
+  useEffect(() => {
+    setExpanded(!isFinished);
+  }, [isFinished, message.id]);
+
+  if (reasoningParts.length === 0) return null;
+
+  const label = `${expanded ? "Hide" : "Show"} reasoning`;
+
+  return (
+    <section className={`reasoning-summary ${expanded ? "expanded" : ""}`} aria-label="Reasoning">
+      <button
+        type="button"
+        aria-expanded={expanded}
+        aria-label={label}
+        onClick={() => setExpanded((current) => !current)}
+      >
+        <ChevronDown aria-hidden="true" />
+        <span>
+          <strong>Reasoning</strong>
+          <small>{isFinished ? "Finished" : "Streaming"}</small>
+        </span>
+      </button>
+      {expanded && (
+        <div className="reasoning-content">
+          {reasoningParts.map((part, index) => (
+            <p key={`${message.id}-reasoning-${index}`}>{part.text}</p>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function AssistantMarkdown({ text }: { text: string }) {
+  return (
+    <div className="markdown-content">
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
+    </div>
+  );
 }
 
 function actionIcon(action: WorkflowAction) {
@@ -73,6 +130,17 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
   const activeUser = mockUsers[persona];
   const personaPolicy = getPersonaPolicy(persona);
   const isBusy = status === "submitted" || status === "streaming";
+  const selectedSourceIds = useMemo(
+    () =>
+      workflow.sources
+        .filter((source) => sourceIsSelected(source.id, source.selected))
+        .map((source) => source.id),
+    [sourceSelection, workflow, workflowKey],
+  );
+  const appContext = useMemo(
+    () => buildAppContext(workflowKey, persona, selectedSourceIds),
+    [workflowKey, persona, selectedSourceIds],
+  );
 
   function sourceIsSelected(id: string, fallback: boolean) {
     return sourceSelection[`${workflowKey}:${id}`] ?? fallback;
@@ -105,9 +173,6 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
     setInput("");
     setHasRun(true);
     setActionNotice("");
-    const selectedSourceIds = workflow.sources
-      .filter((source) => sourceIsSelected(source.id, source.selected))
-      .map((source) => source.id);
     await sendMessage(
       { text: nextPrompt },
       { body: { workflowKey, model, thinking, demoPersona: persona, selectedSourceIds } },
@@ -238,7 +303,13 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
               {messages.map((message) => (
                 <div className={`message ${message.role}`} key={message.id}>
                   <span>{message.role === "user" ? "You" : "Supply Chain Hub"}</span>
-                  <p>{messageText(message)}</p>
+                  {message.role === "assistant" && <ReasoningSummary message={message} />}
+                  {messageText(message) &&
+                    (message.role === "assistant" ? (
+                      <AssistantMarkdown text={messageText(message)} />
+                    ) : (
+                      <p>{messageText(message)}</p>
+                    ))}
                 </div>
               ))}
               {status === "submitted" && <div className="thinking-state">Connecting to authorized tools and retrieving records...</div>}
@@ -332,7 +403,7 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
                 </div>
               </div>
               <ol>
-                {workflow.analysisTrace.map((step, index) => (
+                {appContext.analysisTrace.map((step, index) => (
                   <li key={step.label}>
                     <span className="trace-number">{index + 1}</span>
                     <div><strong>{step.label}</strong><p>{step.detail}</p><small>{step.outcome}</small></div>
@@ -344,11 +415,11 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
             <div className="result-grid">
               <article className="result-summary">
                 <p className="eyebrow">Operational answer</p>
-                <h3>{workflow.headline}</h3>
-                <p>{workflow.summary}</p>
+                <h3>{appContext.answer.headline}</h3>
+                <p>{appContext.answer.summary}</p>
                 <div className="metric-strip">
-                  {workflow.metrics.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}
-                  {personaPolicy.canViewFinancials && workflow.financialMetrics?.map(([label, value]) => (
+                  {appContext.answer.metrics.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}
+                  {personaPolicy.canViewFinancials && appContext.answer.financialMetrics?.map(([label, value]) => (
                     <div className="financial-metric" key={label}><span>{label}</span><strong>{value}</strong></div>
                   ))}
                 </div>
@@ -360,12 +431,7 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
                   <div><h3>Agent activity</h3><span>Auditable tool trace, not private model reasoning</span></div>
                 </div>
                 <ol>
-                  {workflow.activity
-                    .filter((step) => workflow.sources.some((source) =>
-                      sourceIsSelected(source.id, source.selected) &&
-                      step.tool.toLowerCase().includes(source.name.split(" ")[0].toLowerCase()),
-                    ) || step.tool.includes("Policy") || step.tool.includes("Quality"))
-                    .map((step) => (
+                  {appContext.activity.map((step) => (
                       <li key={step.tool}>
                         <span className="activity-check"><Check aria-hidden="true" /></span>
                         <div><strong>{step.tool}</strong><p>{step.detail}</p><small>{step.result}</small></div>
@@ -375,14 +441,14 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
               </article>
             </div>
 
-            {workflow.heatMap && (
+            {appContext.decisionSupport?.heatMap && (
               <section className="heatmap-section">
                 <div className="section-title">
                   <div><p className="eyebrow">Decision support</p><h3>Supplier portfolio heat map</h3></div>
                   <span className="source-note">Cost versus resilience</span>
                 </div>
                 <div className="heatmap">
-                  {workflow.heatMap.map((item) => (
+                  {appContext.decisionSupport.heatMap.map((item) => (
                     <article className={`heat-cell resilience-${item.resilience.toLowerCase()}`} key={item.supplier}>
                       <span>{item.supplier}</span>
                       <strong>{item.recommendation}</strong>
@@ -399,12 +465,14 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
                 <span className="source-note"><Database aria-hidden="true" />Synthetic demo records</span>
               </div>
               <div className="record-list">
-                {workflow.rows.map((row) => (
+                {appContext.rows.map((row) => (
                   <article className="record-row" key={row.subject}>
                     <div><strong>{row.subject}</strong><span>{row.detail}</span></div>
                     <span className={`status-chip status-${row.status.toLowerCase().replaceAll(" ", "-")}`}>{row.status}</span>
                     <p>{row.evidence}</p>
-                    {personaPolicy.canViewFinancials && row.financial && <strong className="financial-value">{row.financial}</strong>}
+                    {personaPolicy.canViewFinancials && "financial" in row && row.financial && (
+                      <strong className="financial-value">{row.financial}</strong>
+                    )}
                   </article>
                 ))}
               </div>
@@ -415,14 +483,14 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
                 <div><p className="eyebrow">Agentic follow-up</p><h3>Available actions</h3></div>
                 <span className="source-note"><ShieldCheck aria-hidden="true" />Human confirmation before external changes</span>
               </div>
-              {workflow.approval && (
+              {appContext.approval && (
                 <div className="approval-banner">
                   <ShieldCheck aria-hidden="true" />
-                  <div><strong>{workflow.approval.label}</strong><span>{workflow.approval.detail}</span></div>
+                  <div><strong>{appContext.approval.label}</strong><span>{appContext.approval.detail}</span></div>
                 </div>
               )}
               <div className="action-grid">
-                {workflow.actions.map((action) => {
+                {appContext.recommendedActions.map((action) => {
                   const Icon = actionIcon(action);
                   return (
                     <button key={action.label} type="button" onClick={() => runAction(action)}>

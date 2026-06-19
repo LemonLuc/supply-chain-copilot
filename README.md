@@ -10,6 +10,7 @@ An intranet-ready supply chain decision workspace that turns fragmented ERP, sup
 - Server-built context for every request.
 - Least-privilege mock identity plus an explicit in-app access simulation for demos.
 - Deterministic sample responses when no live API key is configured.
+- Collapsible OpenAI reasoning summaries for live Responses API calls.
 - Extension points in `lib/chat-extensions.ts` for MCP tools and RAG context.
 
 ## Workflows
@@ -52,7 +53,7 @@ DEMO_USER_ROLE=executive
 
 `logistics` is the least-privilege default. It sees only the operational delivery radar and never receives money values or quantified business-risk fields. `procurement` represents Anna Keller, Procurement Team Lead, and unlocks supplier alternatives and financial context. `executive` represents Dr. Elena Fischer, Chief Logistics Officer, and additionally unlocks the executive portfolio workflow and approval routing.
 
-After a prompt, the app shows a simulated analysis trace covering intent recognition, access checks, source retrieval, evidence validation, and response preparation. This is an auditable process summary for the demo, not private model chain-of-thought.
+After a prompt, the app shows a simulated analysis trace covering intent recognition, access checks, source retrieval, evidence validation, and response preparation. With a live OpenAI key, streamed reasoning summaries also appear inside assistant messages, collapse automatically when the response finishes, and can be reopened. These summaries are not private model chain-of-thought.
 
 In production, replace `getCurrentUser()` in `lib/auth.ts` with claims from the company identity provider, such as Microsoft Entra ID or Okta. Map immutable group or application-role claims to internal policies on the server; never trust a role sent by the browser.
 

@@ -1,5 +1,6 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import {
+  APICallError,
   convertToModelMessages,
   createUIMessageStream,
   createUIMessageStreamResponse,
@@ -23,6 +24,57 @@ type ChatRequest = {
   demoPersona?: unknown;
   selectedSourceIds?: unknown;
 };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function cleanErrorText(value: unknown): string {
+  const text = typeof value === "string" ? value : value == null ? "unknown error" : JSON.stringify(value) ?? String(value);
+  return text.replace(/sk-[A-Za-z0-9_-]+/g, "sk-...redacted").replace(/\s+/g, " ").trim().slice(0, 900);
+}
+
+function parseResponseBody(body: string | undefined): unknown {
+  if (!body) return undefined;
+
+  try {
+    return JSON.parse(body);
+  } catch {
+    return body;
+  }
+}
+
+function extractApiErrorDetails(value: unknown): string | undefined {
+  const payload = isRecord(value) && isRecord(value.error) ? value.error : value;
+  if (!isRecord(payload)) return typeof payload === "string" ? cleanErrorText(payload) : undefined;
+
+  const parts = [
+    payload.message ? cleanErrorText(payload.message) : undefined,
+    payload.code ? `code: ${cleanErrorText(payload.code)}` : undefined,
+    payload.type ? `type: ${cleanErrorText(payload.type)}` : undefined,
+    payload.param ? `param: ${cleanErrorText(payload.param)}` : undefined,
+  ].filter(Boolean);
+
+  return parts.length ? parts.join("; ") : undefined;
+}
+
+function formatChatStreamError(error: unknown): string {
+  if (APICallError.isInstance(error)) {
+    const details =
+      extractApiErrorDetails(error.data) ??
+      extractApiErrorDetails(parseResponseBody(error.responseBody)) ??
+      cleanErrorText(error.message);
+    const status = error.statusCode ? ` status ${error.statusCode}` : "";
+    const requestId = error.responseHeaders?.["x-request-id"]
+      ? ` request id: ${cleanErrorText(error.responseHeaders["x-request-id"])}`
+      : "";
+    const retryable = error.isRetryable ? " retryable: yes" : " retryable: no";
+
+    return `OpenAI API request failed${status}: ${details}.${requestId}.${retryable}.`;
+  }
+
+  return error instanceof Error ? cleanErrorText(error.message) : cleanErrorText(error);
+}
 
 function getMessageText(message: UIMessage): string {
   return message.parts
@@ -86,9 +138,10 @@ export async function POST(request: Request): Promise<Response> {
     providerOptions: {
       openai: {
         reasoningEffort: options.thinking,
+        reasoningSummary: "auto",
       },
     },
   });
 
-  return result.toUIMessageStreamResponse();
+  return result.toUIMessageStreamResponse({ onError: formatChatStreamError });
 }

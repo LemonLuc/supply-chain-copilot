@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { createUIMessageStream, createUIMessageStreamResponse } from "ai";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { mockUsers } from "@/lib/auth";
@@ -16,6 +17,56 @@ function mockChatStream() {
         "content-type": "text/event-stream",
         "x-vercel-ai-ui-message-stream": "v1",
       },
+    }),
+  );
+}
+
+function mockChatStreamWithReasoning() {
+  return vi.spyOn(globalThis, "fetch").mockResolvedValue(
+    createUIMessageStreamResponse({
+      stream: createUIMessageStream({
+        execute: ({ writer }) => {
+          writer.write({ type: "reasoning-start", id: "reasoning-1" });
+          writer.write({
+            type: "reasoning-delta",
+            id: "reasoning-1",
+            delta: "Checked authorized workflow context and source filters.",
+          });
+          writer.write({ type: "reasoning-end", id: "reasoning-1" });
+          writer.write({ type: "text-start", id: "answer-1" });
+          writer.write({
+            type: "text-delta",
+            id: "answer-1",
+            delta: "DHL Freight shipment 00340434161094000012 is the first risk to handle.",
+          });
+          writer.write({ type: "text-end", id: "answer-1" });
+        },
+      }),
+    }),
+  );
+}
+
+function mockChatStreamWithMarkdownTable() {
+  return vi.spyOn(globalThis, "fetch").mockResolvedValue(
+    createUIMessageStreamResponse({
+      stream: createUIMessageStream({
+        execute: ({ writer }) => {
+          writer.write({ type: "text-start", id: "answer-1" });
+          writer.write({
+            type: "text-delta",
+            id: "answer-1",
+            delta: [
+              "### Shipment options",
+              "",
+              "| Carrier | ETA | Status |",
+              "| --- | --- | --- |",
+              "| DHL Freight | 25 June | Attention |",
+              "| FedEx | 23 June | On schedule |",
+            ].join("\n"),
+          });
+          writer.write({ type: "text-end", id: "answer-1" });
+        },
+      }),
     }),
   );
 }
@@ -116,6 +167,48 @@ describe("SupplyChainApp", () => {
     expect(screen.getByText(/does not expose private model chain-of-thought/i)).toBeInTheDocument();
   });
 
+  it("auto-collapses finished API reasoning and allows reopening it", async () => {
+    mockChatStreamWithReasoning();
+    render(<SupplyChainApp currentUser={mockUsers.logistics} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Is there any delivery risk this week/i }));
+
+    const toggle = await screen.findByRole("button", { name: "Show reasoning" });
+    expect(screen.getByText("DHL Freight shipment 00340434161094000012 is the first risk to handle.")).toBeInTheDocument();
+    expect(screen.queryByText("Checked authorized workflow context and source filters.")).not.toBeInTheDocument();
+
+    fireEvent.click(toggle);
+
+    expect(screen.getByRole("button", { name: "Hide reasoning" })).toBeInTheDocument();
+    expect(screen.getByText("Checked authorized workflow context and source filters.")).toBeInTheDocument();
+  });
+
+  it("does not show a reasoning panel when the API does not stream reasoning", async () => {
+    mockChatStreamWithMarkdownTable();
+    render(<SupplyChainApp currentUser={mockUsers.logistics} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Is there any delivery risk this week/i }));
+
+    await screen.findByRole("table");
+    expect(screen.queryByRole("button", { name: "Show reasoning" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Hide reasoning" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Traceability process")).not.toBeInTheDocument();
+  });
+
+  it("renders assistant markdown tables as table markup", async () => {
+    mockChatStreamWithMarkdownTable();
+    render(<SupplyChainApp currentUser={mockUsers.logistics} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Is there any delivery risk this week/i }));
+
+    const table = await screen.findByRole("table");
+    expect(table).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Shipment options" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Carrier" })).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "DHL Freight" })).toBeInTheDocument();
+    expect(screen.queryByText("| Carrier | ETA | Status |")).not.toBeInTheDocument();
+  });
+
   it("sends only the selected source ids with the chat request", async () => {
     const fetchMock = mockChatStream();
     render(<SupplyChainApp currentUser={mockUsers.logistics} />);
@@ -126,5 +219,22 @@ describe("SupplyChainApp", () => {
     const requestBody = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
     expect(requestBody.selectedSourceIds).toEqual(["sap", "dhl", "fedex", "warehouse"]);
     expect(requestBody.selectedSourceIds).not.toContain("ups");
+  });
+
+  it("does not show deselected source evidence in the results panel", async () => {
+    const fetchMock = mockChatStream();
+    render(<SupplyChainApp currentUser={mockUsers.logistics} />);
+
+    fireEvent.click(screen.getByLabelText("DHL Freight"));
+    fireEvent.click(screen.getByRole("button", { name: /Is there any delivery risk this week/i }));
+
+    const results = await screen.findByLabelText("Supply Chain Hub results");
+    const requestBody = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+
+    expect(requestBody.selectedSourceIds).not.toContain("dhl");
+    expect(within(results).queryByText(/DHL Freight/i)).not.toBeInTheDocument();
+    expect(within(results).queryByText(/00340434161094000012/i)).not.toBeInTheDocument();
+    expect(within(results).queryByText(/PO 4500872319/i)).not.toBeInTheDocument();
+    expect(within(results).getAllByText(/FedEx Priority/i).length).toBeGreaterThan(0);
   });
 });

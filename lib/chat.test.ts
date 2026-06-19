@@ -51,6 +51,20 @@ describe("chat grounding", () => {
     expect(reply).toContain("demo mode");
   });
 
+  it("does not include deselected source evidence in prompts or demo replies", () => {
+    const context = buildAppContext("risks", "logistics", ["sap", "fedex", "warehouse"]);
+    const prompt = buildSystemPrompt(context);
+    const reply = generateMockReply("What should I do first?", context);
+
+    expect(prompt).not.toContain("DHL Freight");
+    expect(prompt).not.toContain("00340434161094000012");
+    expect(prompt).not.toContain("PO 4500872319");
+    expect(reply).not.toContain("DHL Freight");
+    expect(reply).not.toContain("00340434161094000012");
+    expect(prompt).toContain("FedEx");
+    expect(reply).toContain("FedEx");
+  });
+
   it("answers financial questions only when the context permits it", () => {
     const procurementReply = generateMockReply(
       "What is the cost impact?",
