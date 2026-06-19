@@ -1,109 +1,95 @@
-# Supply Chain Copilot Demo
+# Supply Chain Hub
 
-Supply chain copilot to support inventory, cost, delivery, and risk decisions.
+An intranet-ready supply chain decision workspace that turns fragmented ERP, supplier, spreadsheet, and email evidence into grounded operational recommendations.
 
-This repository supports an executive-level OpenAI presentation:
+## What Is Included
 
-**From Fragmented Supply Chains to AI-Driven Decision Intelligence**
+- Next.js App Router application with React and TypeScript.
+- Vercel AI SDK chat client and streaming server route.
+- OpenAI model and reasoning-level selectors.
+- Server-built context for every request.
+- Least-privilege mock identity plus an explicit in-app access simulation for demos.
+- Deterministic sample responses when no live API key is configured.
+- Collapsible OpenAI reasoning summaries for live Responses API calls.
+- Extension points in `lib/chat-extensions.ts` for MCP tools and RAG context.
 
-The demo is intentionally lightweight, deterministic, and presentation-safe. It shows how ChatGPT and the OpenAI API can become a secure supply-chain control tower across fragmented planning, procurement, supplier, and policy data.
+## Workflows
 
-## Executive Story
-
-Manufacturing supply chains are not short on data. They are short on decision intelligence.
-
-Typical pain points:
-
-- Planners, buyers, and executives work from different systems and different summaries.
-- Risk signals arrive as emails, spreadsheets, supplier portals, ERP data, logistics updates, and policy documents.
-- Scenario planning is slow, manual, and hard to explain.
-- Executives need recommended action, not another dashboard.
-
-OpenAI's role in the story:
-
-- **ChatGPT** is the natural-language interface for planners, procurement, and executives.
-- **Responses API** is the agent layer that reasons over context and calls tools.
-- **File Search / RAG** grounds answers in enterprise knowledge.
-- **Risk, scenario, and policy engines** add deterministic business logic.
-- **Guardrails and human review** keep sensitive decisions controlled.
-
-## Architecture Flow
-
-```mermaid
-flowchart TD
-  U["Users: Planners, Procurement, Executives"]
-  C["ChatGPT Interface: Supply Chain Control Tower"]
-  R["OpenAI Responses API: Agent Layer"]
-  FS["File Search / RAG"]
-  RE["Risk Engine: analysis"]
-  SE["Scenario Engine: simulation"]
-  PE["Policy Engine: guardrails"]
-  EK["Enterprise Knowledge: documents, supplier data, policies"]
-
-  U --> C
-  C --> R
-  R --> FS
-  R --> RE
-  R --> SE
-  R --> PE
-  FS --> EK
-  RE --> EK
-  SE --> EK
-  PE --> EK
-```
-
-## Demo Workflows
-
-1. **Weekly risk scan**: "What are the current top supply chain risks across all suppliers this week?"
-2. **Delay scenario**: "What happens if Supplier A is delayed by 2 weeks?"
-3. **Supplier consolidation**: "Which suppliers should we consolidate, and what is the risk impact?"
-
-Each workflow demonstrates the same decision loop:
-
-1. Ask a business question.
-2. Route through the OpenAI agent layer.
-3. Retrieve trusted supply-chain context.
-4. Run analysis or simulation.
-5. Apply policy constraints.
-6. Return an explainable recommendation with evidence.
+1. **Risk radar** checks SAP, warehouse stock, DHL Freight, FedEx, and other selected carrier tools for part-specific delivery exceptions.
+2. **Supplier alternatives** is available to the Procurement Team Lead and Chief Logistics Officer. It traces affected orders, checks qualified substitutes, and prepares operational updates and supplier follow-ups.
+3. **Executive supplier portfolio** is reserved for the Chief Logistics Officer and produces a prompt-triggered cost-versus-resilience heat map with policy guardrails and C-level approval gates.
 
 ## Run Locally
 
 ```bash
-python3 -m http.server 8000
+npm install
+cp .env.example .env.local
+npm run dev
 ```
 
-Then open:
+Open [http://localhost:3000](http://localhost:3000).
 
-```text
-http://localhost:8000
-```
-
-## GitHub Push
-
-If the remote already contains a README or initial commit:
+The sample key keeps the app in demo mode, so chat works immediately with deterministic responses grounded in the selected workflow. To use OpenAI, replace the value in `.env.local`:
 
 ```bash
-git pull --rebase origin main
-git add .
-git rebase --continue
-git push -u origin main
+OPENAI_API_KEY=sk-your-real-key
 ```
 
-If the remote only has disposable starter files and you want this local version to win:
+The key is read only by `app/api/chat/route.ts` and is never sent to the browser. Restart the dev server after changing environment variables.
+
+## Mock Intranet Identity
+
+`getCurrentUser()` resolves the initial mock identity on the server. The left-rail **Access simulation** selector lets a presenter demonstrate the logistics and procurement views. This browser-selected identity is honored only while the app is using the sample API key; a live OpenAI configuration continues to use the server-derived identity.
+
+Use one of these values in `.env.local`, then restart the server:
 
 ```bash
-git push -u origin main --force-with-lease
+DEMO_USER_ROLE=logistics
+# or
+DEMO_USER_ROLE=procurement
+# or
+DEMO_USER_ROLE=executive
+```
+
+`logistics` is the least-privilege default. It sees only the operational delivery radar and never receives money values or quantified business-risk fields. `procurement` represents Anna Keller, Procurement Team Lead, and unlocks supplier alternatives and financial context. `executive` represents Dr. Elena Fischer, Chief Logistics Officer, and additionally unlocks the executive portfolio workflow and approval routing.
+
+After a prompt, the app shows a simulated analysis trace covering intent recognition, access checks, source retrieval, evidence validation, and response preparation. With a live OpenAI key, streamed reasoning summaries also appear inside assistant messages, collapse automatically when the response finishes, and can be reopened. These summaries are not private model chain-of-thought.
+
+In production, replace `getCurrentUser()` in `lib/auth.ts` with claims from the company identity provider, such as Microsoft Entra ID or Okta. Map immutable group or application-role claims to internal policies on the server; never trust a role sent by the browser.
+
+## Chat Architecture
+
+```mermaid
+flowchart LR
+  SSO["Intranet identity"] --> API["POST /api/chat"]
+  UI["Chat + selected workflow"] --> API
+  API --> AUTH["Server permission policy"]
+  AUTH --> CTX["Filtered application context"]
+  API --> EXT["MCP / RAG extension hooks"]
+  CTX --> OAI["OpenAI Responses API"]
+  CTX --> MOCK["Deterministic demo stream"]
+```
+
+Each browser request sends only the selected workflow, model, and reasoning preference. The server resolves the user and filters the trusted supplier snapshot before it reaches either the model or demo response generator.
+
+To add retrieval, return grounded passages from `loadExternalContext()`. To add MCP or application actions, register AI SDK tools in `getChatTools()`.
+
+## Commands
+
+```bash
+npm test
+npm run typecheck
+npm run build
 ```
 
 ## Production Upgrade Path
 
-For a customer pilot, replace the static demo data with:
+Replace the synthetic data with bounded, audited connectors for:
 
-- ERP and planning data for orders, parts, inventory, and demand.
-- Supplier scorecards, contracts, and policy documents.
+- SAP or another ERP for orders, parts, inventory, demand, and supplier master data.
+- Supplier portals and scorecards for confirmations, capacity, quality, and performance.
+- Contracts and policies retrieved through permission-aware RAG.
 - Logistics, quality, weather, geopolitical, and financial risk signals.
-- A backend `/api/copilot` endpoint using the OpenAI Responses API.
-- Tool calls for risk scoring, scenario simulation, policy checks, and audit logging.
+- Tool calls for scenario simulation, approval workflows, and audit logging.
 
-Start with a narrow pilot: one product family, one supplier category, three decision workflows, and a clear measurement baseline.
+Start with one product family, one supplier category, the three included decision workflows, and a measurable baseline for time-to-decision and avoided disruption.
