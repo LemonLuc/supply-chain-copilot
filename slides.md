@@ -7,6 +7,7 @@ transition: fade-out
 class: se-deck
 drawings:
   persist: false
+record: true
 ---
 
 <section class="cover-slide">

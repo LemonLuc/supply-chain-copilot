@@ -920,7 +920,10 @@
 }
 
 
-/* Public audience mode: hide Slidev runtime navigation chrome on touch and desktop. */
-#slide-container > .absolute.bottom-0.left-0 {
-  display: none !important;
+/* Public audience mode: hide Slidev runtime navigation chrome on touch/mobile,
+   while leaving desktop hover controls available for recording. */
+@media (hover: none), (pointer: coarse), (max-width: 767px) {
+  #slide-container > .absolute.bottom-0.left-0 {
+    display: none !important;
+  }
 }
