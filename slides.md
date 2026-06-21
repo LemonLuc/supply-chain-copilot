@@ -37,7 +37,6 @@ drawings:
       <div><h2>Pilot ask</h2><p>Start with one high-value workflow and validate faster triage, evidence quality and governed approvals.</p></div>
     </div>
   </div>
-  <div class="slide-num">02</div>
 </section>
 
 ---
@@ -64,7 +63,6 @@ drawings:
       </ul>
     </div>
   </div>
-  <div class="slide-num">03</div>
 </section>
 
 ---
@@ -84,7 +82,6 @@ drawings:
     <div><strong>Friction</strong><p>Planner, procurement, logistics and quality teams each see a partial version of the truth.</p></div>
     <div><strong>Cost</strong><p>Late decisions create expedite spend, schedule churn and avoidable management attention.</p></div>
   </div>
-  <div class="slide-num">04</div>
 </section>
 
 ---
@@ -96,7 +93,6 @@ drawings:
     <div><h2>ChatGPT</h2><ul><li>Executive and team-facing front end</li><li>Ask questions, inspect evidence, coordinate next steps</li><li>Natural adoption path for planners and leaders</li></ul></div>
     <div><h2>OpenAI API + SDK</h2><ul><li>Backend integration layer for the Supply Chain Hub</li><li>Streaming answers, tool orchestration, evals and guardrails</li><li>Connects OpenAI into ZEISS workflows without replacing systems of record</li></ul></div>
   </div>
-  <div class="slide-num">05</div>
 </section>
 
 ---
@@ -110,10 +106,9 @@ drawings:
     <div><h2>Control plane</h2><p>Role scope, source filtering, financial masking, approvals and audit logs.</p></div>
   </div>
   <div class="consequence-band">
-    <span>Tool consequence</span>
+    <span>Operational impact</span>
     <p>Supply Chain Hub turns a fragmented signal into a grounded answer, a recommended action and a controlled approval path.</p>
   </div>
-  <div class="slide-num">06</div>
 </section>
 
 ---
@@ -132,7 +127,6 @@ drawings:
     <div class="arch-rail"><div><b>Ground</b><p>Assemble approved context.</p></div><div><b>Reason</b><p>Synthesize risk and options.</p></div><div><b>Act</b><p>Route high-impact changes to approval.</p></div></div>
     <div class="arch-subgrid"><div><h2>Tools</h2><p>Risk, scenario, supplier and policy functions.</p></div><div><h2>Retrieval</h2><p>Approved documents, trackers and records.</p></div><div><h2>Observability</h2><p>Logs, evals, adoption and quality metrics.</p></div></div>
   </div>
-  <div class="slide-num">07</div>
 </section>
 
 ---
@@ -155,7 +149,6 @@ drawings:
     <div><h2>What executives see live</h2><p>A risk question becomes a grounded answer, a traceable recommendation and an approval-ready next step.</p></div>
     <div><h2>Why it creates curiosity</h2><p>The demo shows the same pattern across risk, supplier alternatives and resilience trade-offs without changing the underlying systems.</p></div>
   </div>
-  <div class="slide-num">08</div>
 </section>
 
 ---
@@ -177,7 +170,6 @@ drawings:
     <div><h2>External signals</h2><ul><li>DHL, FedEx and freight forwarder milestones</li><li>Supplier capacity portal</li><li>Customs and exception notifications</li></ul></div>
     <div><h2>Management controls</h2><ul><li>Role-based visibility</li><li>Financial masking</li><li>Human approval for high-impact actions</li></ul></div>
   </div>
-  <div class="slide-num">09</div>
 </section>
 
 ---
@@ -196,7 +188,6 @@ drawings:
       <div><h2>Cost vs. resilience</h2><p>Balance savings against continuity risk.</p></div>
     </div>
   </div>
-  <div class="slide-num">10</div>
 </section>
 
 ---
@@ -218,7 +209,6 @@ drawings:
     <b>=</b>
     <strong>Pilot value case</strong>
   </div>
-  <div class="slide-num">11</div>
 </section>
 
 ---
@@ -233,7 +223,6 @@ drawings:
     <div><h2>Governance</h2><b>100%</b><p>High-impact actions route to human approval.</p></div>
   </div>
   <p class="scorecard-thesis">Pilot instrumentation: compare triage hours, expedite exposure, avoided escalations and answer trust before deciding scale.</p>
-  <div class="slide-num">12</div>
 </section>
 
 ---
@@ -248,7 +237,6 @@ drawings:
     <div><h2>Finance</h2><ul><li>Working capital views</li><li>Expedite-cost exposure</li><li>Scenario assumptions</li></ul></div>
   </div>
   <p class="callout">The reusable pattern is the same: governed ChatGPT experience, OpenAI API integration layer, approved enterprise data and human-controlled actions.</p>
-  <div class="slide-num">13</div>
 </section>
 
 ---
@@ -262,7 +250,6 @@ drawings:
     <div><h2>Weeks 5-6</h2><ul><li>Measure ROI proxy</li><li>Review evals and audit trail</li><li>Decide scale path</li></ul></div>
   </div>
   <p class="callout">Executive ask: approve a six-week pilot around weekly risk visibility and supplier-delay mitigation.</p>
-  <div class="slide-num">14</div>
 </section>
 
 ---
@@ -278,7 +265,6 @@ drawings:
     <div><h2>Quality Hub</h2><p>Bring the same governed pattern to deviations, CAPA and supplier quality.</p></div>
   </div>
   <p class="closing-line">Looking forward to the collaboration between Carl Zeiss AG and OpenAI.</p>
-  <div class="slide-num">15</div>
 </section>
 
 ---
@@ -298,5 +284,4 @@ drawings:
     <div><h2>Governance</h2><ul><li>Persona policy</li><li>Workflow access</li><li>Source filtering and financial masking</li></ul></div>
     <div><h2>Runtime</h2><ul><li>OpenNext + Cloudflare Worker path</li><li>Tests for chat, permissions and UI flows</li><li>Synthetic data for reliable demo delivery</li></ul></div>
   </div>
-  <div class="slide-num">17</div>
 </section>

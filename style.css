@@ -119,7 +119,7 @@
   grid-template-rows: 18px 74px;
 }
 
-.slide-section > *:nth-child(n + 3):not(.slide-num):not(.zeiss-logo) {
+.slide-section > *:nth-child(n + 3):not(.zeiss-logo) {
   align-self: start;
   justify-self: center;
 }
@@ -132,14 +132,6 @@
   max-width: 760px;
 }
 
-.slide-num {
-  bottom: 24px;
-  color: rgba(16, 16, 16, 0.42);
-  font-size: 8px;
-  font-weight: 560;
-  position: absolute;
-  right: 64px;
-}
 
 .cover-slide {
   align-content: center;
@@ -644,7 +636,7 @@
   margin: 0 !important;
 }
 
-.demo-slide > *:nth-child(n + 3):not(.slide-num) {
+.demo-slide > *:nth-child(n + 3) {
   align-self: start;
   justify-self: center;
 }
@@ -925,4 +917,10 @@
 .arch-subgrid h2 {
   font-size: 11.5px;
   margin-bottom: 5px;
+}
+
+
+/* Public audience mode: hide Slidev runtime navigation chrome on touch and desktop. */
+#slide-container > .absolute.bottom-0.left-0 {
+  display: none !important;
 }

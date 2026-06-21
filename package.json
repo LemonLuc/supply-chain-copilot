@@ -12,7 +12,8 @@
     "deploy": "opennextjs-cloudflare build && npm run sanitize:cloudflare-env && opennextjs-cloudflare deploy -- --keep-vars",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "slides:deploy": "npm run slides:build && wrangler deploy --config wrangler.deck.jsonc"
   },
   "dependencies": {
     "@ai-sdk/openai": "latest",
