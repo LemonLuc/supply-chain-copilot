@@ -39,6 +39,32 @@ export type ResultRow = {
   financial?: string;
 };
 
+export type WorkflowDocument = {
+  name: string;
+  sourceIds: string[];
+  location: string;
+  version: string;
+  lastModified: string;
+  owner: string;
+  summary: string;
+  recentChanges: Array<{
+    timestamp: string;
+    author: string;
+    worksheet: string;
+    range: string;
+    change: string;
+    impact: string;
+  }>;
+  rows: Array<{
+    worksheet: string;
+    key: string;
+    status: string;
+    evidence: string;
+    owner: string;
+    nextReview: string;
+  }>;
+};
+
 export type HeatMapItem = {
   supplier: string;
   cost: "Low" | "Medium" | "High";
@@ -64,6 +90,7 @@ export type Workflow = {
   financialMetrics?: Array<[string, string]>;
   actions: WorkflowAction[];
   rows: ResultRow[];
+  documents?: WorkflowDocument[];
   heatMap?: HeatMapItem[];
   approval?: {
     label: string;
@@ -82,8 +109,8 @@ export const workflows: Record<WorkflowKey, Workflow> = {
     accessLabel: "Available to all supply chain roles",
     sourceStatus: "6 available tools · live demo data",
     suggestedPrompts: [
-      "Is there any delivery risk this week for N-FK5 optical glass blanks used in the Axioscan 7 objective module?",
-      "Which incoming shipment needs attention before Wednesday?",
+      "Show me potential delivery risks for this week.",
+      "Review Supplier Risk & Capacity Register.xlsx and show me recent changes.",
       "Check whether any carrier milestone changed overnight.",
     ],
     sources: [
@@ -153,14 +180,14 @@ export const workflows: Record<WorkflowKey, Workflow> = {
     accessLabel: "Procurement Team Lead or higher",
     sourceStatus: "6 available tools · restricted workflow",
     suggestedPrompts: [
-      "What are our approved alternatives if the objective turret supplier for Axioscan 7 is delayed by 12 days?",
+      "What approved alternates can cover the delayed turret assemblies?",
       "Which production orders can use an approved alternate turret?",
-      "Prepare the supplier overview update for the logistics lead.",
+      "Prepare the supplier risk register update for the logistics lead.",
     ],
     sources: [
       { id: "sap", name: "SAP S/4HANA", category: "ERP MCP", detail: "BOM where-used, orders, inventory", selected: true },
       { id: "quality", name: "Supplier qualification database", category: "Quality MCP", detail: "Approved parts and deviations", selected: true },
-      { id: "excel", name: "Supplier overview.xlsx", category: "SharePoint MCP", detail: "Operational supplier tracker", selected: true },
+      { id: "excel", name: "Supplier Risk & Capacity Register.xlsx", category: "SharePoint MCP", detail: "Operational supplier tracker", selected: true },
       { id: "capacity", name: "Supplier capacity portal", category: "Supplier MCP", detail: "Available capacity and lead time", selected: true },
       { id: "outlook", name: "Outlook", category: "Microsoft 365 MCP", detail: "Draft supplier and team emails", selected: true },
       { id: "teams", name: "Microsoft Teams", category: "Microsoft 365 MCP", detail: "Share approved operational update", selected: false },
@@ -169,7 +196,7 @@ export const workflows: Record<WorkflowKey, Workflow> = {
       { tool: "SAP S/4HANA MCP", detail: "Ran BOM where-used for turret assembly 000113-8821", result: "14 released Axioscan 7 orders affected" },
       { tool: "Quality MCP", detail: "Checked approved manufacturer list and deviations", result: "One alternate approved with a torque-test condition" },
       { tool: "Supplier capacity MCP", detail: "Requested current capacity from Mechatronik Süd", result: "Eight units available within six days" },
-      { tool: "SharePoint MCP", detail: "Opened supplier overview.xlsx", result: "Row and comment targets identified" },
+      { tool: "SharePoint MCP", detail: "Opened Supplier Risk & Capacity Register.xlsx", result: "Row and comment targets identified" },
     ],
     analysisTrace: [
       { label: "Understand request", detail: "Identify the delayed assembly, duration and affected product.", outcome: "Objective turret 000113-8821 · 12 days" },
@@ -191,8 +218,8 @@ export const workflows: Record<WorkflowKey, Workflow> = {
       ["Expedite estimate", "€4,900"],
     ],
     actions: [
-      { label: "Add comment to supplier overview", detail: "Update the primary supplier row with delay, owner and next review.", kind: "update" },
-      { label: "Share overview with logistics lead", detail: "Prepare the current Excel view for the department lead.", kind: "share" },
+      { label: "Add comment to supplier risk register", detail: "Update the primary supplier row with delay, owner and next review.", kind: "update" },
+      { label: "Share risk register with logistics lead", detail: "Prepare the current Excel view for the department lead.", kind: "share" },
       { label: "Draft alternate capacity request", detail: "Ask Mechatronik Süd to reserve eight MT-440B units.", kind: "draft" },
     ],
     rows: [
@@ -213,6 +240,70 @@ export const workflows: Record<WorkflowKey, Workflow> = {
         financial: "Commercial quote pending",
       },
     ],
+    documents: [
+      {
+        name: "Supplier Risk & Capacity Register.xlsx",
+        sourceIds: ["excel"],
+        location: "SharePoint / SMT Procurement / Critical Supplier Continuity",
+        version: "version 24.06.21-rc3",
+        lastModified: "2026-06-21 17:40 CET",
+        owner: "Dana Narid",
+        summary:
+          "Operational workbook tracking approved alternates, supplier capacity, qualification status, and action owners for Axioscan 7 turret assemblies.",
+        recentChanges: [
+          {
+            timestamp: "2026-06-21 17:40 CET",
+            author: "Dana Narid",
+            worksheet: "Alternate Coverage",
+            range: "F18:H18",
+            change: "Mechatronik Süd capacity increased from 6 to 8 units and the reservation expiry moved to 24 June 12:00 CET.",
+            impact: "Eight of fourteen affected Axioscan 7 builds can be protected if procurement confirms the reservation today.",
+          },
+          {
+            timestamp: "2026-06-21 12:10 CET",
+            author: "Quality MCP sync",
+            worksheet: "Qualification Status",
+            range: "C27:E27",
+            change: "OptoMotion Brno remains marked Not approved because endurance validation is still open.",
+            impact: "Do not use OM-17 for released builds until the quality gate changes from open to passed.",
+          },
+          {
+            timestamp: "2026-06-20 16:05 CET",
+            author: "Lukas Weber",
+            worksheet: "Production Impact",
+            range: "B8:D13",
+            change: "Six build orders were tagged for resequencing after alternate coverage was capped below total demand.",
+            impact: "Logistics needs a resequencing proposal for the remaining six builds before the next production meeting.",
+          },
+        ],
+        rows: [
+          {
+            worksheet: "Alternate Coverage",
+            key: "Mechatronik Süd · MT-440B",
+            status: "Conditional approval",
+            evidence: "8 units available within 6 days; incoming torque test required.",
+            owner: "Dana Narid",
+            nextReview: "2026-06-22 09:00 CET",
+          },
+          {
+            worksheet: "Qualification Status",
+            key: "OptoMotion Brno · OM-17",
+            status: "Not approved",
+            evidence: "Dimensional review complete; endurance validation still open.",
+            owner: "Supplier Quality",
+            nextReview: "2026-06-26 15:00 CET",
+          },
+          {
+            worksheet: "Production Impact",
+            key: "AX7 released build set",
+            status: "Resequence required",
+            evidence: "14 builds affected; 8 covered by approved alternate; 6 remain uncovered.",
+            owner: "Lukas Weber",
+            nextReview: "2026-06-22 11:30 CET",
+          },
+        ],
+      },
+    ],
   },
   consolidate: {
     navLabel: "Executive supplier portfolio",
@@ -224,7 +315,7 @@ export const workflows: Record<WorkflowKey, Workflow> = {
     accessLabel: "Chief Logistics Officer only · executive approval enforced",
     sourceStatus: "7 available tools · governance policy active",
     suggestedPrompts: [
-      "Give me a heat map of suppliers showing cost versus resilience and recommend where we can consolidate.",
+      "Show supplier consolidation options with cost and resilience tradeoffs.",
       "Which tail-spend suppliers can be consolidated under our dual-source guardrail?",
       "Prepare an executive review pack for the recommended changes.",
     ],

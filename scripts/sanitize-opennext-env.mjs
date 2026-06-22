@@ -2,6 +2,7 @@ import { readFile, writeFile } from "node:fs/promises";
 
 const envFile = ".open-next/cloudflare/next-env.mjs";
 const sensitiveKeyPattern = /(SECRET|TOKEN|PASSWORD|PRIVATE|API_KEY|ACCESS_KEY|CLIENT_SECRET)/i;
+const runtimeOnlyKeys = new Set(["DEMO_USER_ROLE"]);
 const exportPattern = /^export const (\w+) = (\{.*\});$/gm;
 
 const source = await readFile(envFile, "utf8");
@@ -12,7 +13,7 @@ const sanitized = source.replace(exportPattern, (match, mode, json) => {
   const values = JSON.parse(json);
 
   for (const key of Object.keys(values)) {
-    if (!key.startsWith("NEXT_PUBLIC_") && sensitiveKeyPattern.test(key)) {
+    if (!key.startsWith("NEXT_PUBLIC_") && (sensitiveKeyPattern.test(key) || runtimeOnlyKeys.has(key))) {
       delete values[key];
       removedKeys.add(key);
     }

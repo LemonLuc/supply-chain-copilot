@@ -19,7 +19,7 @@ describe("normalizeChatOptions", () => {
   it("uses safe defaults for unsupported values", () => {
     expect(normalizeChatOptions("legacy-model", "maximum")).toEqual({
       model: "gpt-5.4-mini",
-      thinking: "medium",
+      thinking: "high",
     });
   });
 
@@ -63,6 +63,27 @@ describe("chat grounding", () => {
     expect(reply).not.toContain("00340434161094000012");
     expect(prompt).toContain("FedEx");
     expect(reply).toContain("FedEx");
+  });
+
+  it("grounds supplier register review answers in selected SharePoint workbook data", () => {
+    const context = buildAppContext("delay", "executive", ["sap", "quality", "excel", "capacity", "outlook"]);
+    const prompt = buildSystemPrompt(context);
+    const reply = generateMockReply("Review Supplier Risk & Capacity Register.xlsx and show me recent changes.", context);
+
+    expect(prompt).toContain("Supplier Risk & Capacity Register.xlsx");
+    expect(prompt).toContain("Mechatronik Süd capacity increased from 6 to 8 units");
+    expect(prompt).toContain("version 24.06.21-rc3");
+    expect(reply).toContain("Supplier Risk & Capacity Register.xlsx");
+    expect(reply).toContain("Mechatronik Süd capacity increased from 6 to 8 units");
+  });
+
+  it("does not claim workbook access when the SharePoint source is deselected", () => {
+    const context = buildAppContext("delay", "executive", ["sap", "quality", "capacity", "outlook"]);
+    const prompt = buildSystemPrompt(context);
+    const reply = generateMockReply("Review Supplier Risk & Capacity Register.xlsx and show me recent changes.", context);
+
+    expect(prompt).not.toContain("Mechatronik Süd capacity increased from 6 to 8 units");
+    expect(reply).toContain("SharePoint MCP is not selected");
   });
 
   it("answers financial questions only when the context permits it", () => {

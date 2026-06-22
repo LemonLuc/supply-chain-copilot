@@ -9,9 +9,11 @@ import {
   Database,
   ExternalLink,
   FileCheck2,
+  ListChecks,
   Mail,
   RotateCcw,
   Send,
+  Settings2,
   ShieldCheck,
   Sparkles,
   Square,
@@ -131,10 +133,12 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
   const [persona, setPersona] = useState<PersonaId>(currentUser.persona);
   const [workflowKey, setWorkflowKey] = useState<WorkflowKey>("risks");
   const [model, setModel] = useState<SupportedModel>("gpt-5.4-mini");
-  const [thinking, setThinking] = useState<ThinkingLevel>("medium");
+  const [thinking, setThinking] = useState<ThinkingLevel>("high");
   const [input, setInput] = useState("");
   const [hasRun, setHasRun] = useState(false);
   const [actionNotice, setActionNotice] = useState("");
+  const [actionMenuOpen, setActionMenuOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [sourceSelection, setSourceSelection] = useState<Record<string, boolean>>({});
   const [approvalRequests, setApprovalRequests] = useState<ApprovalRequest[]>([]);
   const transport = useMemo(() => new DefaultChatTransport({ api: "/api/chat" }), []);
@@ -173,6 +177,7 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
   function resetRunState() {
     setHasRun(false);
     setActionNotice("");
+    setActionMenuOpen(false);
     setMessages([]);
     clearError();
   }
@@ -196,6 +201,7 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
     setWorkflowKey(nextWorkflowKey);
     setHasRun(true);
     setActionNotice("");
+    setActionMenuOpen(false);
     await sendMessage(
       { text: nextPrompt },
       { body: { workflowKey: nextWorkflowKey, model, thinking, demoPersona: persona, selectedSourceIds: nextSelectedSourceIds } },
@@ -232,6 +238,7 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
     };
 
     setApprovalRequests((current) => [...current, request]);
+    setActionMenuOpen(false);
     setActionNotice(`Approval request sent to ${reviewer.name}.`);
   }
 
@@ -285,22 +292,20 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
             <div>
               <span className="context-line">
                 <span className="live-dot" aria-hidden="true" />
-                Currently {selectedToolCount} out of {roleToolSources.length} tools selected, choose authorized sources below
+                Currently {selectedToolCount} out of {roleToolSources.length} authorized tools selected
               </span>
             </div>
-            <div className="chat-selectors">
-              <label>
-                <span>Model</span>
-                <select aria-label="Model" value={model} onChange={(event) => setModel(event.target.value as SupportedModel)}>
-                  {supportedModels.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
-                </select>
-              </label>
-              <label>
-                <span>Thinking level</span>
-                <select aria-label="Thinking level" value={thinking} onChange={(event) => setThinking(event.target.value as ThinkingLevel)}>
-                  {thinkingLevels.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
-                </select>
-              </label>
+            <div className="chat-controls">
+              <button
+                className="icon-button"
+                type="button"
+                aria-expanded={settingsOpen}
+                aria-label={`${settingsOpen ? "Close" : "Open"} chat settings`}
+                title={`${settingsOpen ? "Close" : "Open"} chat settings`}
+                onClick={() => setSettingsOpen((current) => !current)}
+              >
+                <Settings2 aria-hidden="true" />
+              </button>
               {(messages.length > 0 || hasRun) && (
                 <button className="icon-button" type="button" aria-label="Clear conversation" title="Clear conversation" onClick={resetRunState}>
                   <RotateCcw aria-hidden="true" />
@@ -309,8 +314,60 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
             </div>
           </div>
 
+          {settingsOpen && (
+            <section className="chat-settings-panel" aria-label="Chat settings">
+              <div className="settings-heading">
+                <div>
+                  <h3>Settings</h3>
+                  <p>Configure tools once, then reselect later when the workflow changes.</p>
+                </div>
+              </div>
+              <div className="chat-selectors">
+                <label>
+                  <span>Model</span>
+                  <select aria-label="Model" value={model} onChange={(event) => setModel(event.target.value as SupportedModel)}>
+                    {supportedModels.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+                  </select>
+                </label>
+                <label>
+                  <span>Thinking level</span>
+                  <select aria-label="Thinking level" value={thinking} onChange={(event) => setThinking(event.target.value as ThinkingLevel)}>
+                    {thinkingLevels.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+                  </select>
+                </label>
+              </div>
+              <div className="source-grid settings-source-grid">
+                {roleToolSources.map((source) => {
+                  const checked = sourceIsSelected(source.toolId, source.selected);
+                  return (
+                    <label className={`source-item ${checked ? "selected" : ""}`} key={source.toolId}>
+                      <input
+                        aria-label={source.name}
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(event) => setSourceSelection((current) => ({
+                          ...current,
+                          [source.toolId]: event.target.checked,
+                        }))}
+                      />
+                      <Database aria-hidden="true" />
+                      <span><strong>{source.name}</strong><small>{source.category} · {source.detail}</small></span>
+                      <span className="source-state">{checked ? "Authorized" : "Not used"}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          <div className="prompt-row" aria-label="Suggested questions">
+            {suggestedPrompts.map((prompt) => (
+              <button key={prompt} type="button" onClick={() => void submitPrompt(prompt)}>{prompt}</button>
+            ))}
+          </div>
+
           {messages.length > 0 && (
-            <div className="message-list" aria-live="polite">
+            <div className="message-list" aria-label="Chat messages" aria-live="polite">
               {messages.map((message) => (
                 <div className={`message ${message.role}`} key={message.id}>
                   <span>{message.role === "user" ? "You" : "Supply Chain Hub"}</span>
@@ -327,11 +384,42 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
             </div>
           )}
 
-          <div className="prompt-row" aria-label="Suggested questions">
-            {suggestedPrompts.map((prompt) => (
-              <button key={prompt} type="button" onClick={() => void submitPrompt(prompt)}>{prompt}</button>
-            ))}
-          </div>
+          {hasRun && appContext.recommendedActions.length > 0 && (
+            <section className="chat-action-menu" aria-label="Agentic follow-up actions">
+              <button
+                className="action-menu-toggle"
+                type="button"
+                aria-expanded={actionMenuOpen}
+                aria-label={`${actionMenuOpen ? "Close" : "Open"} action menu`}
+                onClick={() => setActionMenuOpen((current) => !current)}
+              >
+                <ListChecks aria-hidden="true" />
+                <span>Action</span>
+                <ChevronDown aria-hidden="true" />
+              </button>
+              {actionMenuOpen && (
+                <div className="action-menu-list">
+                  {appContext.approval && (
+                    <div className="approval-banner compact">
+                      <ShieldCheck aria-hidden="true" />
+                      <div><strong>{appContext.approval.label}</strong><span>{appContext.approval.detail}</span></div>
+                    </div>
+                  )}
+                  {appContext.recommendedActions.map((action) => {
+                    const Icon = actionIcon(action);
+                    return (
+                      <button key={action.label} type="button" onClick={() => runAction(action)}>
+                        <Icon aria-hidden="true" />
+                        <span><strong>{action.label}</strong><small>{action.detail}</small></span>
+                        <ChevronRight aria-hidden="true" />
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {actionNotice && <p className="action-notice" role="status"><Check aria-hidden="true" />{actionNotice}</p>}
+            </section>
+          )}
 
           {error && <p className="chat-error" role="alert">{error.message}</p>}
 
@@ -359,35 +447,6 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
               </button>
             )}
           </form>
-        </section>
-
-        <section className="source-section" aria-labelledby="source-title">
-            <div className="section-title">
-              <div>
-                <h3 id="source-title">SELECT TOOLS</h3>
-              </div>
-            </div>
-            <div className="source-grid">
-            {roleToolSources.map((source) => {
-              const checked = sourceIsSelected(source.toolId, source.selected);
-              return (
-                <label className={`source-item ${checked ? "selected" : ""}`} key={source.toolId}>
-                  <input
-                    aria-label={source.name}
-                    type="checkbox"
-                    checked={checked}
-                    onChange={(event) => setSourceSelection((current) => ({
-                      ...current,
-                      [source.toolId]: event.target.checked,
-                    }))}
-                  />
-                  <Database aria-hidden="true" />
-                  <span><strong>{source.name}</strong><small>{source.category} · {source.detail}</small></span>
-                  <span className="source-state">{checked ? "Authorized" : "Not used"}</span>
-                </label>
-              );
-            })}
-          </div>
         </section>
 
         {(incomingApprovals.length > 0 || submittedApprovals.length > 0) && (
@@ -491,44 +550,30 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
                 <div><p className="eyebrow">Grounded records</p><h3>Evidence returned by authorized tools</h3></div>
                 <span className="source-note"><Database aria-hidden="true" />Synthetic demo records</span>
               </div>
-              <div className="record-list">
-                {appContext.rows.map((row) => (
-                  <article className="record-row" key={row.subject}>
-                    <div><strong>{row.subject}</strong><span>{row.detail}</span></div>
-                    <span className={`status-chip status-${row.status.toLowerCase().replaceAll(" ", "-")}`}>{row.status}</span>
-                    <p>{row.evidence}</p>
-                    {personaPolicy.canViewFinancials && "financial" in row && row.financial && (
-                      <strong className="financial-value">{row.financial}</strong>
-                    )}
-                  </article>
-                ))}
+              <div className="records-table-wrap">
+                <table className="records-table" aria-label="Synthetic demo records">
+                  <thead>
+                    <tr>
+                      <th scope="col">Record</th>
+                      <th scope="col">Status</th>
+                      <th scope="col">Evidence</th>
+                      {personaPolicy.canViewFinancials && <th scope="col">Financial</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {appContext.rows.map((row) => (
+                      <tr key={row.subject}>
+                        <td><strong>{row.subject}</strong><span>{row.detail}</span></td>
+                        <td><span className={`status-chip status-${row.status.toLowerCase().replaceAll(" ", "-")}`}>{row.status}</span></td>
+                        <td>{row.evidence}</td>
+                        {personaPolicy.canViewFinancials && (
+                          <td>{"financial" in row && row.financial && <strong className="financial-value">{row.financial}</strong>}</td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            </section>
-
-            <section className="actions-section">
-              <div className="section-title">
-                <div><p className="eyebrow">Agentic follow-up</p><h3>Available actions</h3></div>
-                <span className="source-note"><ShieldCheck aria-hidden="true" />Human confirmation before external changes</span>
-              </div>
-              {appContext.approval && (
-                <div className="approval-banner">
-                  <ShieldCheck aria-hidden="true" />
-                  <div><strong>{appContext.approval.label}</strong><span>{appContext.approval.detail}</span></div>
-                </div>
-              )}
-              <div className="action-grid">
-                {appContext.recommendedActions.map((action) => {
-                  const Icon = actionIcon(action);
-                  return (
-                    <button key={action.label} type="button" onClick={() => runAction(action)}>
-                      <Icon aria-hidden="true" />
-                      <span><strong>{action.label}</strong><small>{action.detail}</small></span>
-                      <ChevronRight aria-hidden="true" />
-                    </button>
-                  );
-                })}
-              </div>
-              {actionNotice && <p className="action-notice" role="status"><Check aria-hidden="true" />{actionNotice}</p>}
             </section>
           </section>
         )}

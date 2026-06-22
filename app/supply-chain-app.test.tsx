@@ -114,14 +114,33 @@ describe("SupplyChainApp", () => {
     expect(screen.queryByLabelText("No analysis yet")).not.toBeInTheDocument();
     expect(screen.queryByText("Delivery exception found")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /Is there any delivery risk this week/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Show me potential delivery risks for this week/i }));
 
     await waitFor(() => expect(screen.getByText("Delivery exception found")).toBeInTheDocument());
     expect(screen.getByText(/DHL Freight shipment 00340434161094000012/i)).toBeInTheDocument();
     expect(screen.queryByText("Agent activity")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Draft email to DHL Freight/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Update SAP promised date/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Which incoming shipment needs attention before Wednesday/i })).toBeInTheDocument();
+    const chatPanel = screen.getByLabelText("Ask Supply Chain Hub");
+    expect(within(chatPanel).getByRole("button", { name: /Open action menu/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Draft email to DHL Freight/i })).not.toBeInTheDocument();
+
+    fireEvent.click(within(chatPanel).getByRole("button", { name: /Open action menu/i }));
+
+    expect(within(chatPanel).getByRole("button", { name: /Draft email to DHL Freight/i })).toBeInTheDocument();
+    expect(within(chatPanel).getByRole("button", { name: /Update SAP promised date/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Review Supplier Risk & Capacity Register.xlsx and show me recent changes/i })).toBeInTheDocument();
+  });
+
+  it("keeps suggested prompt templates in place after an example prompt runs", async () => {
+    mockChatStream();
+    render(<SupplyChainApp currentUser={mockUsers.logistics} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Show me potential delivery risks for this week/i }));
+
+    await waitFor(() => expect(screen.getByText("Delivery exception found")).toBeInTheDocument());
+    const suggestions = screen.getByLabelText("Suggested questions");
+    const messages = screen.getByLabelText("Chat messages");
+
+    expect(suggestions.compareDocumentPosition(messages) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("never shows financial values or quantified business risk to logistics planners", async () => {
@@ -132,7 +151,7 @@ describe("SupplyChainApp", () => {
     expect(screen.queryByText(/Revenue at risk/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("columnheader", { name: "Impact" })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /Is there any delivery risk this week/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Show me potential delivery risks for this week/i }));
     await waitFor(() => expect(screen.getByText("Delivery exception found")).toBeInTheDocument());
 
     expect(screen.queryByText(/€/)).not.toBeInTheDocument();
@@ -144,11 +163,15 @@ describe("SupplyChainApp", () => {
 
     expect(screen.queryByRole("button", { name: /Supplier alternatives/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Executive supplier portfolio/i })).not.toBeInTheDocument();
-    expect(screen.getByText("Currently 4 out of 6 tools selected, choose authorized sources below")).toBeInTheDocument();
+    expect(screen.getByText("Currently 4 out of 6 authorized tools selected")).toBeInTheDocument();
     expect(screen.queryByText(/Risk radar/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Tool access/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Choose authorized sources" })).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "SELECT TOOLS" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "SELECT TOOLS" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("SAP S/4HANA")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Open chat settings/i }));
+    expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
+    expect(screen.getByText("Configure tools once, then reselect later when the workflow changes.")).toBeInTheDocument();
     expect(screen.getByLabelText("SAP S/4HANA")).toBeChecked();
     expect(screen.getByLabelText("DHL Freight")).toBeChecked();
     expect(screen.queryByLabelText("Supplier qualification database")).not.toBeInTheDocument();
@@ -159,12 +182,12 @@ describe("SupplyChainApp", () => {
     const fetchMock = mockChatStream();
     render(<SupplyChainApp currentUser={mockUsers.procurement} />);
 
-    expect(screen.getAllByLabelText("SAP S/4HANA")).toHaveLength(2);
-    expect(screen.getAllByLabelText("SAP S/4HANA").every((input) => input instanceof HTMLInputElement && input.checked)).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: /Open chat settings/i }));
+    expect(screen.getAllByLabelText("SAP S/4HANA").some((input) => input instanceof HTMLInputElement && input.checked)).toBe(true);
     expect(screen.getByLabelText("Supplier qualification database")).toBeChecked();
     expect(screen.queryByRole("button", { name: /Executive supplier portfolio/i })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /What are our approved alternatives/i }));
+    fireEvent.click(screen.getByRole("button", { name: /What approved alternates can cover the delayed turret assemblies/i }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
     const requestBody = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
@@ -176,20 +199,35 @@ describe("SupplyChainApp", () => {
     const fetchMock = mockChatStream();
     render(<SupplyChainApp currentUser={mockUsers.executive} />);
 
+    fireEvent.click(screen.getByRole("button", { name: /Open chat settings/i }));
     expect(screen.getByLabelText("DHL Freight")).toBeChecked();
     expect(screen.getByLabelText("Supplier qualification database")).toBeChecked();
     expect(screen.getByLabelText("Contract repository")).toBeChecked();
     expect(screen.queryByText("Supplier portfolio heat map")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /Give me a heat map/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Show supplier consolidation options/i }));
 
     await waitFor(() => expect(screen.getByText("Supplier portfolio heat map")).toBeInTheDocument());
     const requestBody = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
     expect(requestBody.workflowKey).toBe("consolidate");
     expect(requestBody.selectedSourceIds).toEqual(["sap", "contracts", "quality", "resilience", "policy"]);
+    fireEvent.click(screen.getByRole("button", { name: /Open action menu/i }));
     expect(screen.getByText("C-level approval required")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Request executive review/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Terminate contract now/i })).not.toBeInTheDocument();
+  });
+
+  it("routes the CEO workbook review prompt with the selected SharePoint source", async () => {
+    const fetchMock = mockChatStream();
+    render(<SupplyChainApp currentUser={mockUsers.executive} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Review Supplier Risk & Capacity Register.xlsx and show me recent changes/i }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    const requestBody = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    expect(requestBody.workflowKey).toBe("delay");
+    expect(requestBody.demoPersona).toBe("executive");
+    expect(requestBody.selectedSourceIds).toEqual(["sap", "quality", "excel", "capacity", "outlook"]);
   });
 
   it("does not show the simulated process summary after prompting", async () => {
@@ -197,7 +235,7 @@ describe("SupplyChainApp", () => {
     render(<SupplyChainApp currentUser={mockUsers.logistics} />);
 
     expect(screen.queryByText("Analysis trace")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Is there any delivery risk this week/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Show me potential delivery risks for this week/i }));
 
     await waitFor(() => expect(screen.getByText("Delivery exception found")).toBeInTheDocument());
     expect(screen.queryByText("Analysis trace")).not.toBeInTheDocument();
@@ -212,7 +250,7 @@ describe("SupplyChainApp", () => {
     mockChatStreamWithReasoning();
     render(<SupplyChainApp currentUser={mockUsers.logistics} />);
 
-    fireEvent.click(screen.getByRole("button", { name: /Is there any delivery risk this week/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Show me potential delivery risks for this week/i }));
 
     const toggle = await screen.findByRole("button", { name: "Show reasoning" });
     expect(screen.getByText("DHL Freight shipment 00340434161094000012 is the first risk to handle.")).toBeInTheDocument();
@@ -228,7 +266,7 @@ describe("SupplyChainApp", () => {
     mockChatStreamWithMarkdownTable();
     render(<SupplyChainApp currentUser={mockUsers.logistics} />);
 
-    fireEvent.click(screen.getByRole("button", { name: /Is there any delivery risk this week/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Show me potential delivery risks for this week/i }));
 
     await screen.findByRole("table");
     expect(screen.getByRole("button", { name: "Hide reasoning" })).toBeInTheDocument();
@@ -240,7 +278,7 @@ describe("SupplyChainApp", () => {
     mockChatStreamWithMarkdownTable();
     render(<SupplyChainApp currentUser={mockUsers.logistics} />);
 
-    fireEvent.click(screen.getByRole("button", { name: /Is there any delivery risk this week/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Show me potential delivery risks for this week/i }));
 
     const table = await screen.findByRole("table");
     expect(table).toBeInTheDocument();
@@ -254,7 +292,7 @@ describe("SupplyChainApp", () => {
     const fetchMock = mockChatStream();
     render(<SupplyChainApp currentUser={mockUsers.logistics} />);
 
-    fireEvent.click(screen.getByRole("button", { name: /Is there any delivery risk this week/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Show me potential delivery risks for this week/i }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
     const requestBody = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
@@ -266,11 +304,12 @@ describe("SupplyChainApp", () => {
     const fetchMock = mockChatStream();
     render(<SupplyChainApp currentUser={mockUsers.logistics} />);
 
+    fireEvent.click(screen.getByRole("button", { name: /Open chat settings/i }));
     fireEvent.click(screen.getByLabelText("DHL Freight"));
 
-    expect(screen.getByText("Currently 3 out of 6 tools selected, choose authorized sources below")).toBeInTheDocument();
+    expect(screen.getByText("Currently 3 out of 6 authorized tools selected")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /Is there any delivery risk this week/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Show me potential delivery risks for this week/i }));
 
     const results = await screen.findByLabelText("Supply Chain Hub results");
     const requestBody = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
@@ -286,9 +325,10 @@ describe("SupplyChainApp", () => {
     mockChatStream();
     render(<SupplyChainApp currentUser={mockUsers.logistics} />);
 
-    fireEvent.click(screen.getByRole("button", { name: /Is there any delivery risk this week/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Show me potential delivery risks for this week/i }));
     await waitFor(() => expect(screen.getByText("Delivery exception found")).toBeInTheDocument());
 
+    fireEvent.click(screen.getByRole("button", { name: /Open action menu/i }));
     fireEvent.click(screen.getByRole("button", { name: /Notify logistics team lead/i }));
 
     expect(screen.getByText(/Approval request sent to Dana Narid/i)).toBeInTheDocument();
@@ -316,9 +356,10 @@ describe("SupplyChainApp", () => {
     mockChatStream();
     render(<SupplyChainApp currentUser={mockUsers.executive} />);
 
-    fireEvent.click(screen.getByRole("button", { name: /Give me a heat map/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Show supplier consolidation options/i }));
     await waitFor(() => expect(screen.getByText("Supplier portfolio heat map")).toBeInTheDocument());
 
+    fireEvent.click(screen.getByRole("button", { name: /Open action menu/i }));
     fireEvent.click(screen.getByRole("button", { name: /Request executive review/i }));
 
     expect(screen.getByText("Approval queue")).toBeInTheDocument();

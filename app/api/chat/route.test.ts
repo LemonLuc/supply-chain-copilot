@@ -126,6 +126,35 @@ describe("POST /api/chat", () => {
     expect(stream).toContain("not available to your signed-in role");
   });
 
+  it("uses the selected demo CEO persona for live demo requests", async () => {
+    process.env.OPENAI_API_KEY = "sk-live-test-key";
+    process.env.DEMO_USER_ROLE = undefined;
+    const request = new Request("http://localhost/api/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        messages: [
+          {
+            id: "message-1",
+            role: "user",
+            parts: [{ type: "text", text: "Review Supplier Risk & Capacity Register.xlsx and show me recent changes." }],
+          },
+        ],
+        workflowKey: "delay",
+        demoPersona: "executive",
+        selectedSourceIds: ["sap", "quality", "excel", "capacity", "outlook"],
+      }),
+    });
+
+    const response = await POST(request);
+    const systemPrompt = (streamTextMock.mock.calls[0][0] as { system: string }).system;
+
+    expect(response.status).toBe(200);
+    expect(systemPrompt).toContain('"id": "executive"');
+    expect(systemPrompt).toContain('"key": "delay"');
+    expect(systemPrompt).toContain("Supplier Risk & Capacity Register.xlsx");
+  });
+
   it("enables OpenAI reasoning summaries for live responses", async () => {
     process.env.OPENAI_API_KEY = "sk-live-test-key";
     const request = new Request("http://localhost/api/chat", {
@@ -154,7 +183,7 @@ describe("POST /api/chat", () => {
       providerOptions: {
         openai: {
           reasoningEffort: "medium",
-          reasoningSummary: "auto",
+          reasoningSummary: "detailed",
         },
       },
     });
@@ -190,6 +219,34 @@ describe("POST /api/chat", () => {
     expect(systemPrompt).not.toContain('"id": "fedex"');
     expect(systemPrompt).not.toContain("FedEx MCP");
     expect(systemPrompt).not.toContain("PO 4500872481");
+  });
+
+  it("passes selected SharePoint workbook mock data into the live model context", async () => {
+    process.env.OPENAI_API_KEY = "sk-live-test-key";
+    process.env.DEMO_USER_ROLE = "executive";
+    const request = new Request("http://localhost/api/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        messages: [
+          {
+            id: "message-1",
+            role: "user",
+            parts: [{ type: "text", text: "Review Supplier Risk & Capacity Register.xlsx and show me recent changes." }],
+          },
+        ],
+        workflowKey: "delay",
+        selectedSourceIds: ["sap", "quality", "excel", "capacity", "outlook"],
+      }),
+    });
+
+    const response = await POST(request);
+    const systemPrompt = (streamTextMock.mock.calls[0][0] as { system: string }).system;
+
+    expect(response.status).toBe(200);
+    expect(systemPrompt).toContain("Supplier Risk & Capacity Register.xlsx");
+    expect(systemPrompt).toContain("Mechatronik Süd capacity increased from 6 to 8 units");
+    expect(systemPrompt).toContain("version 24.06.21-rc3");
   });
 
   it("surfaces safe OpenAI API error details in streamed responses", async () => {

@@ -115,7 +115,11 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const serverPersona = getCurrentUser().persona;
-  const demoPersona = hasLiveApiKey() ? serverPersona : normalizePersona(body.demoPersona ?? serverPersona);
+  const hasConfiguredServerPersona =
+    process.env.DEMO_USER_ROLE === "executive" ||
+    process.env.DEMO_USER_ROLE === "procurement" ||
+    process.env.DEMO_USER_ROLE === "logistics";
+  const demoPersona = hasConfiguredServerPersona ? serverPersona : normalizePersona(body.demoPersona ?? serverPersona);
   const context = buildAppContext(body.workflowKey, demoPersona, body.selectedSourceIds);
   const options = normalizeChatOptions(body.model, body.thinking);
 
@@ -138,7 +142,7 @@ export async function POST(request: Request): Promise<Response> {
     providerOptions: {
       openai: {
         reasoningEffort: options.thinking,
-        reasoningSummary: "auto",
+        reasoningSummary: "detailed",
       },
     },
   });

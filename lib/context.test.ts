@@ -78,6 +78,23 @@ describe("buildAppContext", () => {
     });
   });
 
+  it("includes SharePoint workbook review data for executive supplier register prompts when authorized", () => {
+    const context = buildAppContext("delay", "executive", ["sap", "quality", "excel", "capacity", "outlook"]);
+
+    expect(context.workflow.key).toBe("delay");
+    expect(context.sources.map((source) => source.id)).toContain("excel");
+    expect(context.documents?.map((document) => document.name)).toEqual(["Supplier Risk & Capacity Register.xlsx"]);
+    expect(JSON.stringify(context.documents)).toContain("Mechatronik Süd capacity increased from 6 to 8 units");
+    expect(JSON.stringify(context.documents)).toContain("version 24.06.21-rc3");
+  });
+
+  it("omits SharePoint workbook review data when the workbook source is not selected", () => {
+    const context = buildAppContext("delay", "executive", ["sap", "quality", "capacity", "outlook"]);
+
+    expect(context.sources.map((source) => source.id)).not.toContain("excel");
+    expect(context).not.toHaveProperty("documents");
+  });
+
   it("does not leak restricted workflow synthetic data when access is denied", () => {
     const context = buildAppContext("consolidate", "procurement");
 
@@ -118,6 +135,10 @@ describe("buildRoleToolSources", () => {
 describe("resolveWorkflowForPrompt", () => {
   it("selects the supplier alternatives workflow when an authorized prompt asks for alternates", () => {
     expect(resolveWorkflowForPrompt("Which approved alternatives can cover the turret delay?", "procurement")).toBe("delay");
+  });
+
+  it("routes the supplier risk register review prompt to the SharePoint-backed workflow for executives", () => {
+    expect(resolveWorkflowForPrompt("Review Supplier Risk & Capacity Register.xlsx and show me recent changes.", "executive")).toBe("delay");
   });
 
   it("falls back to an authorized workflow when the matching workflow is restricted", () => {

@@ -31,7 +31,7 @@ export function resolveWorkflowForPrompt(prompt: string, personaValue?: unknown)
   const normalizedPrompt = prompt.toLowerCase();
   const candidates: Array<[WorkflowKey, string[]]> = [
     ["consolidate", ["heat map", "heatmap", "consolidate", "portfolio", "tail-spend", "resilience"]],
-    ["delay", ["alternative", "alternatives", "alternate", "turret", "supplier overview", "delayed", "delay"]],
+    ["delay", ["alternative", "alternatives", "alternate", "turret", "supplier overview", "supplier risk", "capacity register", "delayed", "delay"]],
     ["risks", ["risk", "delivery", "shipment", "carrier", "milestone", "freight", "fedex", "dhl"]],
   ];
   const match = candidates.find(([workflowKey, keywords]) =>
@@ -125,6 +125,9 @@ export function buildAppContext(
   const selectedActions = workflow.actions.filter((action) =>
     sourceSetIncludesAll(selectedSourceIds, action.sourceIds),
   );
+  const selectedDocuments = workflow.documents?.filter((document) =>
+    sourceSetIncludesAll(selectedSourceIds, document.sourceIds),
+  );
 
   return {
     persona: {
@@ -150,6 +153,7 @@ export function buildAppContext(
     ...(workflow.approval ? { approval: workflow.approval } : {}),
     recommendedActions: selectedActions,
     rows: selectedRows,
+    ...(selectedDocuments?.length ? { documents: selectedDocuments } : {}),
   };
 }
 

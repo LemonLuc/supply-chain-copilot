@@ -27,7 +27,7 @@ export function normalizeChatOptions(model: unknown, thinking: unknown): {
 
   return {
     model: supportedModel ?? "gpt-5.4-mini",
-    thinking: supportedThinking ?? "medium",
+    thinking: supportedThinking ?? "high",
   };
 }
 
@@ -46,9 +46,45 @@ Application snapshot:
 ${JSON.stringify(context, null, 2)}`;
 }
 
+function asksForWorkbookReview(question: string): boolean {
+  const normalizedQuestion = question.toLowerCase();
+
+  return (
+    normalizedQuestion.includes("supplier risk") ||
+    normalizedQuestion.includes("capacity register") ||
+    normalizedQuestion.includes("workbook") ||
+    normalizedQuestion.includes(".xlsx") ||
+    normalizedQuestion.includes("recent changes")
+  );
+}
+
 export function generateMockReply(question: string, context: AppContext): string {
   const [firstAction, secondAction] = context.recommendedActions;
   const normalizedQuestion = question.toLowerCase();
+  const firstDocument = context.documents?.[0];
+  if (asksForWorkbookReview(question)) {
+    if (!firstDocument) {
+      return `I cannot review Supplier Risk & Capacity Register.xlsx because the SharePoint MCP is not selected as an authorized source for this request.
+
+Enable the SharePoint workbook source in chat settings and rerun the review prompt to include workbook contents and recent changes.
+
+This response is running in demo mode with sample application data. Add a real OPENAI_API_KEY to enable model-generated analysis.`;
+    }
+
+    return `${firstDocument.name} review
+
+The workbook is available from ${firstDocument.location} at ${firstDocument.version}, last modified ${firstDocument.lastModified} by ${firstDocument.owner}.
+
+Recent changes:
+${firstDocument.recentChanges.map((change) => `- ${change.timestamp} · ${change.worksheet} ${change.range}: ${change.change} Impact: ${change.impact}`).join("\n")}
+
+Current register rows:
+${firstDocument.rows.map((row) => `- ${row.key}: ${row.status}. ${row.evidence} Owner: ${row.owner}; next review: ${row.nextReview}.`).join("\n")}
+
+Suggested next action: ${firstAction.label}.${secondAction ? ` I can also ${secondAction.label.toLowerCase()}.` : ""}
+
+This response is running in demo mode with sample application data. Add a real OPENAI_API_KEY to enable model-generated analysis.`;
+  }
   const asksForMoney = ["impact", "cost", "€", "revenue", "savings"].some((term) =>
     normalizedQuestion.includes(term),
   );
