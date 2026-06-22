@@ -26,10 +26,12 @@ import { POST } from "./route";
 
 const previousApiKey = process.env.OPENAI_API_KEY;
 const previousDemoRole = process.env.DEMO_USER_ROLE;
+const previousLockedDemoRole = process.env.LOCK_DEMO_USER_ROLE;
 
 afterEach(() => {
   process.env.OPENAI_API_KEY = previousApiKey;
   process.env.DEMO_USER_ROLE = previousDemoRole;
+  process.env.LOCK_DEMO_USER_ROLE = previousLockedDemoRole;
   streamTextMock.mockClear();
 });
 
@@ -249,6 +251,35 @@ describe("POST /api/chat", () => {
     expect(stream).toContain("Supplier Risk & Capacity Register.xlsx");
     expect(stream).toContain("Mechatronik Süd capacity increased from 6 to 8 units");
     expect(stream).toContain("version 24.06.21-rc3");
+  });
+
+  it("uses the selected demo persona even when a default demo role is configured", async () => {
+    process.env.OPENAI_API_KEY = "sk-live-test-key";
+    process.env.DEMO_USER_ROLE = "logistics";
+    const request = new Request("http://localhost/api/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        messages: [
+          {
+            id: "message-1",
+            role: "user",
+            parts: [{ type: "text", text: "Review Supplier Risk & Capacity Register.xlsx and show me recent changes." }],
+          },
+        ],
+        workflowKey: "delay",
+        demoPersona: "procurement",
+        selectedSourceIds: ["sap", "quality", "excel", "capacity", "outlook"],
+      }),
+    });
+
+    const response = await POST(request);
+    const stream = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(streamTextMock).not.toHaveBeenCalled();
+    expect(stream).toContain("Mechatronik Süd capacity increased from 6 to 8 units");
+    expect(stream).not.toContain("SharePoint MCP is not selected");
   });
 
   it("surfaces safe OpenAI API error details in streamed responses", async () => {

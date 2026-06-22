@@ -18,7 +18,7 @@ import {
   Sparkles,
   Square,
 } from "lucide-react";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -140,8 +140,10 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
   const [actionMenuOpen, setActionMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [activePrompt, setActivePrompt] = useState("");
   const [sourceSelection, setSourceSelection] = useState<Record<string, boolean>>({});
   const [approvalRequests, setApprovalRequests] = useState<ApprovalRequest[]>([]);
+  const latestMessageRef = useRef<HTMLDivElement | null>(null);
   const transport = useMemo(() => new DefaultChatTransport({ api: "/api/chat" }), []);
   const { messages, sendMessage, status, error, stop, setMessages, clearError } = useChat({ transport });
   const activeUser = mockUsers[persona];
@@ -161,9 +163,15 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
     [sourceSelection, roleToolSources, workflowKey],
   );
   const appContext = useMemo(
-    () => buildAppContext(workflowKey, persona, selectedSourceIds),
-    [workflowKey, persona, selectedSourceIds],
+    () => buildAppContext(workflowKey, persona, selectedSourceIds, activePrompt),
+    [workflowKey, persona, selectedSourceIds, activePrompt],
   );
+
+  useEffect(() => {
+    if (!messages.length) return;
+
+    latestMessageRef.current?.scrollIntoView?.({ block: "end", behavior: "smooth" });
+  }, [messages.length, status]);
 
   function sourceIsSelected(toolId: string, fallback: boolean) {
     return sourceSelection[toolId] ?? fallback;
@@ -179,6 +187,7 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
     setHasRun(false);
     setActionNotice("");
     setActionMenuOpen(false);
+    setActivePrompt("");
     setMessages([]);
     clearError();
   }
@@ -200,9 +209,10 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
     clearError();
     setInput("");
     setWorkflowKey(nextWorkflowKey);
+    setActivePrompt(nextPrompt);
     setHasRun(true);
     setActionNotice("");
-    setActionMenuOpen(false);
+    setActionMenuOpen(true);
     await sendMessage(
       { text: nextPrompt },
       { body: { workflowKey: nextWorkflowKey, model, thinking, demoPersona: persona, selectedSourceIds: nextSelectedSourceIds } },
@@ -382,7 +392,11 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
           {messages.length > 0 && (
             <div className="message-list" aria-label="Chat messages" aria-live="polite">
               {messages.map((message) => (
-                <div className={`message ${message.role}`} key={message.id}>
+                <div
+                  className={`message ${message.role}`}
+                  key={message.id}
+                  ref={message.id === messages[messages.length - 1]?.id ? latestMessageRef : undefined}
+                >
                   <span>{message.role === "user" ? "You" : "Supply Chain Hub"}</span>
                   {message.role === "assistant" && <ReasoningSummary message={message} />}
                   {messageText(message) &&
@@ -403,11 +417,11 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
                 className="action-menu-toggle"
                 type="button"
                 aria-expanded={actionMenuOpen}
-                aria-label={`${actionMenuOpen ? "Close" : "Open"} action menu`}
+                aria-label={`${actionMenuOpen ? "Close" : "Open"} actions`}
                 onClick={() => setActionMenuOpen((current) => !current)}
               >
                 <ListChecks aria-hidden="true" />
-                <span>Action</span>
+                <span>Actions</span>
                 <ChevronDown aria-hidden="true" />
               </button>
               {actionMenuOpen && (

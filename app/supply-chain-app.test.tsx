@@ -137,11 +137,7 @@ describe("SupplyChainApp", () => {
     expect(screen.getByText(/DHL Freight shipment 00340434161094000012/i)).toBeInTheDocument();
     expect(screen.queryByText("Agent activity")).not.toBeInTheDocument();
     const chatPanel = screen.getByLabelText("Ask Supply Chain Hub");
-    expect(within(chatPanel).getByRole("button", { name: /Open action menu/i })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Draft email to DHL Freight/i })).not.toBeInTheDocument();
-
-    fireEvent.click(within(chatPanel).getByRole("button", { name: /Open action menu/i }));
-
+    expect(within(chatPanel).getByRole("button", { name: /Close actions/i })).toBeInTheDocument();
     expect(within(chatPanel).getByRole("button", { name: /Draft email to DHL Freight/i })).toBeInTheDocument();
     expect(within(chatPanel).getByRole("button", { name: /Update SAP promised date/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Review Supplier Risk & Capacity Register.xlsx and show me recent changes/i })).toBeInTheDocument();
@@ -158,6 +154,25 @@ describe("SupplyChainApp", () => {
     const messages = screen.getByLabelText("Chat messages");
 
     expect(suggestions.compareDocumentPosition(messages) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("scrolls the chat transcript to the newest prompt after subsequent prompt clicks", async () => {
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+      configurable: true,
+      value: scrollIntoView,
+    });
+    mockChatStreamWithReasoning();
+    render(<SupplyChainApp currentUser={mockUsers.logistics} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Show me potential delivery risks for this week/i }));
+    await screen.findByText("DHL Freight shipment 00340434161094000012 is the first risk to handle.");
+
+    scrollIntoView.mockClear();
+    fireEvent.click(screen.getByRole("button", { name: /Check whether any carrier milestone changed overnight/i }));
+    await waitFor(() => expect(screen.getAllByText(/Supply Chain Hub/i).length).toBeGreaterThan(1));
+
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: "end", behavior: "smooth" });
   });
 
   it("never shows financial values or quantified business risk to logistics planners", async () => {
@@ -228,7 +243,6 @@ describe("SupplyChainApp", () => {
     const requestBody = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
     expect(requestBody.workflowKey).toBe("consolidate");
     expect(requestBody.selectedSourceIds).toEqual(["sap", "contracts", "quality", "resilience", "policy"]);
-    fireEvent.click(screen.getByRole("button", { name: /Open action menu/i }));
     expect(screen.getByText("C-level approval required")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Request executive review/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Terminate contract now/i })).not.toBeInTheDocument();
@@ -345,7 +359,6 @@ describe("SupplyChainApp", () => {
     fireEvent.click(screen.getByRole("button", { name: /Show me potential delivery risks for this week/i }));
     await waitFor(() => expect(screen.getByText("Delivery exception found")).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole("button", { name: /Open action menu/i }));
     fireEvent.click(screen.getByRole("button", { name: /Notify logistics team lead/i }));
 
     expect(screen.getByText(/Approval request sent to Dana Narid/i)).toBeInTheDocument();
@@ -376,7 +389,6 @@ describe("SupplyChainApp", () => {
     fireEvent.click(screen.getByRole("button", { name: /Show supplier consolidation options/i }));
     await waitFor(() => expect(screen.getByText("Supplier portfolio heat map")).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole("button", { name: /Open action menu/i }));
     fireEvent.click(screen.getByRole("button", { name: /Request executive review/i }));
 
     expect(screen.getByText("Approval queue")).toBeInTheDocument();

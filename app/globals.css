@@ -100,7 +100,7 @@ h1, h2, h3, p { margin-top: 0; }
 .settings-heading h3 { margin-bottom: 4px; font-size: .95rem; }
 .settings-heading p { margin: 0; color: var(--muted); font-size: .72rem; line-height: 1.4; }
 .settings-source-grid { margin-top: 0; }
-.message-list { display: grid; gap: 12px; max-height: 340px; margin-top: 14px; padding: 14px 2px; overflow-y: auto; border-top: 1px solid var(--line); }
+.message-list { display: grid; gap: 12px; min-height: 180px; max-height: clamp(360px, 52vh, 680px); margin-top: 14px; padding: 14px 2px; overflow-y: auto; scroll-behavior: smooth; border-top: 1px solid var(--line); }
 .message { max-width: 80%; }
 .message.user { justify-self: end; }
 .message > span { display: block; margin-bottom: 5px; color: var(--muted); font-size: .66rem; font-weight: 800; text-transform: uppercase; }
@@ -136,10 +136,10 @@ h1, h2, h3, p { margin-top: 0; }
 .prompt-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; }
 .prompt-row button { min-height: 35px; border: 1px solid #cbd3e4; border-radius: 5px; padding: 7px 10px; color: #243564; background: var(--panel-blue); font-size: .76rem; text-align: left; }
 .prompt-row button:first-child { border-color: var(--azure); background: #fff; }
-.chat-action-menu { display: grid; gap: 9px; margin-top: 10px; }
-.action-menu-toggle { display: inline-grid; grid-template-columns: 17px auto 15px; align-items: center; justify-self: start; gap: 7px; min-height: 35px; border: 1px solid #cbd3e4; border-radius: 5px; padding: 7px 10px; color: #243564; background: #fff; font-size: .76rem; font-weight: 800; }
+.chat-action-menu { display: grid; gap: 10px; margin-top: 14px; border: 1px solid color-mix(in srgb, var(--indigo) 28%, var(--line)); border-radius: 6px; padding: 10px; background: var(--panel-blue); }
+.action-menu-toggle { display: inline-grid; grid-template-columns: 17px auto 15px; align-items: center; justify-self: stretch; gap: 7px; min-height: 38px; border: 1px solid color-mix(in srgb, var(--indigo) 34%, var(--line)); border-radius: 5px; padding: 8px 10px; color: var(--indigo); background: var(--surface-strong); font-size: .76rem; font-weight: 800; }
 .action-menu-toggle svg { width: 15px; height: 15px; }
-.action-menu-toggle[aria-expanded="true"] { border-color: var(--azure); background: var(--panel-blue); }
+.action-menu-toggle[aria-expanded="true"] { border-color: var(--indigo); background: color-mix(in srgb, var(--indigo) 9%, var(--surface-strong)); }
 .action-menu-list { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 9px; border: 1px solid #d8deec; border-radius: 6px; padding: 10px; background: #fbfcff; }
 .action-menu-list button { display: grid; grid-template-columns: 23px minmax(0,1fr) 16px; align-items: center; gap: 9px; min-height: 75px; border: 1px solid #cbd3e4; border-radius: 6px; padding: 11px; color: var(--ink); background: #fff; text-align: left; }
 .action-menu-list button:hover { border-color: var(--azure); background: var(--panel-blue); }
@@ -163,7 +163,7 @@ h1, h2, h3, p { margin-top: 0; }
 .source-item { display: grid; grid-template-columns: 16px 20px minmax(0,1fr) auto; align-items: center; gap: 8px; min-height: 62px; border: 1px solid var(--line); border-radius: 6px; padding: 9px; background: #fff; }
 .source-item.selected { border-color: #aebce6; background: var(--panel-blue); }
 .source-item input { accent-color: var(--indigo); }
-.source-item > svg { width: 18px; color: var(--azure); }
+.source-item > svg { width: 18px; color: var(--indigo); }
 .source-item > span:not(.source-state) { display: grid; gap: 2px; min-width: 0; }
 .source-item strong { font-size: .76rem; }
 .source-item small { overflow: hidden; color: var(--muted); font-size: .62rem; text-overflow: ellipsis; white-space: nowrap; }
@@ -376,29 +376,46 @@ h1, h2, h3, p { margin-top: 0; }
 }
 
 .app-shell .app-title .ai-mark {
-  transform: translateY(-2px);
+  display: grid;
+  place-items: center;
+  color: var(--indigo);
+  border: 1px solid color-mix(in srgb, var(--indigo) 24%, var(--line));
+  border-radius: 12px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--indigo) 10%, var(--white)), var(--white));
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--indigo) 14%, transparent);
+  transform: translateY(-4px);
+}
+
+.app-shell .app-title .ai-mark svg {
+  position: static;
+  width: 28px;
+  height: 28px;
+  color: var(--indigo);
+  stroke-width: 2;
 }
 
 .app-shell .app-title h1 {
-  font-weight: 620;
+  letter-spacing: 0;
+  font-weight: 580;
 }
 
 .app-shell .identity-picker,
 .app-shell .chat-selectors label,
 .app-shell .access-demo label {
-  font-weight: 560;
+  font-weight: 500;
 }
 
 .app-shell .identity-picker span,
 .app-shell .chat-selectors label span,
 .app-shell .access-demo label span {
-  font-weight: 560;
+  font-size: .67rem;
+  font-weight: 500;
 }
 
 .app-shell .identity-picker select,
 .app-shell .chat-selectors select,
 .app-shell .access-demo select {
-  font-weight: 500;
+  font-weight: 480;
   line-height: 1.2;
 }
 
@@ -406,7 +423,7 @@ h1, h2, h3, p { margin-top: 0; }
 .app-shell .prompt-row button,
 .app-shell .action-menu-toggle,
 .app-shell .approval-controls button {
-  font-weight: 560;
+  font-weight: 500;
 }
 
 .app-shell .settings-heading h3,
@@ -416,17 +433,27 @@ h1, h2, h3, p { margin-top: 0; }
 .app-shell .action-menu-list button strong,
 .app-shell .approval-card-heading strong,
 .app-shell .records-table td:first-child strong {
-  font-weight: 620;
+  font-weight: 560;
 }
 
 .app-shell .records-table th,
 .app-shell .source-state,
 .app-shell .status-chip {
-  font-weight: 700;
+  font-weight: 620;
 }
 
 .app-shell .top-user-controls .user-details strong {
-  font-weight: 620;
+  font-weight: 560;
+}
+
+.app-shell .eyebrow,
+.app-shell .message > span,
+.app-shell .reasoning-summary strong,
+.app-shell .reasoning-summary small,
+.app-shell .markdown-content strong,
+.app-shell .metric-strip strong,
+.app-shell .approval-card-heading span:not(.status-chip) {
+  font-weight: 560;
 }
 
 .app-shell .chat-panel,
@@ -484,6 +511,11 @@ h1, h2, h3, p { margin-top: 0; }
 .app-shell .heat-cell strong,
 .app-shell .result-summary h3 {
   color: var(--ink);
+}
+
+.app-shell .source-item > svg,
+.app-shell .action-menu-toggle > svg:first-child {
+  color: var(--indigo);
 }
 
 .app-shell .user-details span,

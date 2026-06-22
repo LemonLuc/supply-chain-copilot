@@ -115,12 +115,11 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const serverPersona = getCurrentUser().persona;
-  const hasConfiguredServerPersona =
-    process.env.DEMO_USER_ROLE === "executive" ||
-    process.env.DEMO_USER_ROLE === "procurement" ||
-    process.env.DEMO_USER_ROLE === "logistics";
-  const demoPersona = hasConfiguredServerPersona ? serverPersona : normalizePersona(body.demoPersona ?? serverPersona);
-  const context = buildAppContext(body.workflowKey, demoPersona, body.selectedSourceIds);
+  const demoPersona =
+    process.env.LOCK_DEMO_USER_ROLE === "true"
+      ? serverPersona
+      : normalizePersona(body.demoPersona ?? serverPersona);
+  const context = buildAppContext(body.workflowKey, demoPersona, body.selectedSourceIds, question);
   const options = normalizeChatOptions(body.model, body.thinking);
 
   if (asksForWorkbookReview(question) || !hasLiveApiKey()) {

@@ -99,6 +99,29 @@ describe("buildAppContext", () => {
     expect(JSON.stringify(context.documents)).toContain("Mechatronik Süd capacity increased from 6 to 8 units");
   });
 
+  it("focuses the visible answer and evidence rows on the selected workbook prompt", () => {
+    const context = buildAppContext(
+      "delay",
+      "procurement",
+      ["sap", "quality", "excel", "capacity", "outlook"],
+      "Review Supplier Risk & Capacity Register.xlsx and show me recent changes.",
+    );
+
+    expect(context.answer.headline).toBe("Supplier risk register changes found");
+    expect(context.answer.summary).toContain("Supplier Risk & Capacity Register.xlsx");
+    expect(context.answer.metrics).toEqual([
+      ["Workbook version", "24.06.21-rc3"],
+      ["Recent changes", "3"],
+      ["Owner", "Dana Narid"],
+    ]);
+    expect(context.rows.map((row) => row.detail)).toEqual([
+      "Alternate Coverage",
+      "Qualification Status",
+      "Production Impact",
+    ]);
+    expect(context.rows[0].evidence).toContain("incoming torque test required");
+  });
+
   it("omits SharePoint workbook review data when the workbook source is not selected", () => {
     const context = buildAppContext("delay", "executive", ["sap", "quality", "capacity", "outlook"]);
 

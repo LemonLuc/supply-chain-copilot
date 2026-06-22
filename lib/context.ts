@@ -1,4 +1,4 @@
-import { workflowKeys, workflows, type WorkflowKey, type WorkflowSource } from "./demo-data";
+import { workflowKeys, workflows, type ResultRow, type WorkflowKey, type WorkflowSource } from "./demo-data";
 import { canAccessWorkflow, getPersonaPolicy, normalizePersona } from "./permissions";
 
 export function normalizeWorkflowKey(value: unknown): WorkflowKey {
@@ -99,10 +99,24 @@ function buildSelectedAnswer(
   };
 }
 
+function focusesWorkbookPrompt(value: unknown): boolean {
+  if (typeof value !== "string") return false;
+  const normalizedPrompt = value.toLowerCase();
+
+  return (
+    normalizedPrompt.includes("supplier risk") ||
+    normalizedPrompt.includes("capacity register") ||
+    normalizedPrompt.includes("workbook") ||
+    normalizedPrompt.includes(".xlsx") ||
+    normalizedPrompt.includes("recent changes")
+  );
+}
+
 export function buildAppContext(
   value: unknown,
   personaValue?: unknown,
   selectedSourceValue?: unknown,
+  promptValue?: unknown,
 ) {
   const key = normalizeWorkflowKey(value);
   const persona = normalizePersona(personaValue);
@@ -128,6 +142,28 @@ export function buildAppContext(
   const selectedDocuments = workflow.documents?.filter((document) =>
     sourceSetIncludesAll(selectedSourceIds, document.sourceIds),
   );
+  const [focusedDocument] = selectedDocuments ?? [];
+  const focusWorkbook = Boolean(focusedDocument && focusesWorkbookPrompt(promptValue));
+  const focusedAnswer = focusWorkbook
+    ? {
+        headline: "Supplier risk register changes found",
+        summary: `${focusedDocument.name} is available from ${focusedDocument.location} at ${focusedDocument.version}. ${focusedDocument.summary}`,
+        metrics: [
+          ["Workbook version", focusedDocument.version.replace(/^version\s+/i, "")],
+          ["Recent changes", String(focusedDocument.recentChanges.length)],
+          ["Owner", focusedDocument.owner],
+        ],
+      }
+    : buildSelectedAnswer(workflow, selectedRows, allRowsAvailable, policy.canViewFinancials);
+  const focusedRows: Array<Omit<ResultRow, "financial"> & { financial?: string }> = focusWorkbook
+    ? focusedDocument.rows.map((row) => ({
+        subject: row.key,
+        detail: row.worksheet,
+        status: row.status,
+        evidence: `${row.evidence} Owner: ${row.owner}; next review: ${row.nextReview}.`,
+        sourceIds: focusedDocument.sourceIds,
+      }))
+    : selectedRows;
 
   return {
     persona: {
@@ -140,7 +176,7 @@ export function buildAppContext(
       question: workflow.question,
       accessAllowed: allowed,
     },
-    answer: buildSelectedAnswer(workflow, selectedRows, allRowsAvailable, policy.canViewFinancials),
+    answer: focusedAnswer,
     sources: selectedSources,
     selectedAuthorizedSources: selectedSources,
     activity: workflow.activity.filter((step) =>
@@ -152,7 +188,7 @@ export function buildAppContext(
     ...(workflow.heatMap ? { decisionSupport: { heatMap: workflow.heatMap } } : {}),
     ...(workflow.approval ? { approval: workflow.approval } : {}),
     recommendedActions: selectedActions,
-    rows: selectedRows,
+    rows: focusedRows,
     ...(selectedDocuments?.length ? { documents: selectedDocuments } : {}),
   };
 }
