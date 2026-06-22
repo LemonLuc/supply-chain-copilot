@@ -25,10 +25,15 @@ function initialFormat() {
 }
 
 const selectedFormat = ref(initialFormat())
+const displayAudioEnabled = ref(false)
 const micEnabled = computed({
   get: () => currentMic.value !== 'none',
   set: enabled => currentMic.value = enabled ? 'default' : 'none',
 })
+
+function updateDisplayAudio() {
+  window.localStorage.setItem('slidev-record-display-audio', displayAudioEnabled.value ? 'true' : 'false')
+}
 
 function updateFormat() {
   const key = 'slidev-record-mimetype'
@@ -45,6 +50,8 @@ function updateFormat() {
 if (typeof window !== 'undefined') {
   if (currentMic.value === 'none')
     currentMic.value = 'default'
+  displayAudioEnabled.value = window.localStorage.getItem('slidev-record-display-audio') === 'true'
+  updateDisplayAudio()
   updateFormat()
 }
 </script>
@@ -58,6 +65,15 @@ if (typeof window !== 'undefined') {
     @click="micEnabled = !micEnabled"
   >
     {{ micEnabled ? 'Mic on' : 'Mic off' }}
+  </button>
+  <button
+    type="button"
+    :aria-pressed="displayAudioEnabled"
+    :title="displayAudioEnabled ? 'Shared tab or window audio is included' : 'Only microphone audio is recorded'"
+    class="recording-audio-toggle"
+    @click="displayAudioEnabled = !displayAudioEnabled; updateDisplayAudio()"
+  >
+    {{ displayAudioEnabled ? 'Tab audio on' : 'Mic only' }}
   </button>
   <select
     v-if="availableFormats.length > 1"
@@ -75,7 +91,8 @@ if (typeof window !== 'undefined') {
 
 <style scoped>
 .recording-format-select,
-.recording-mic-toggle {
+.recording-mic-toggle,
+.recording-audio-toggle {
   background: transparent;
   border: 1px solid currentColor;
   border-radius: 4px;
@@ -87,7 +104,8 @@ if (typeof window !== 'undefined') {
   padding: 0 4px;
 }
 
-.recording-mic-toggle[aria-pressed='false'] {
+.recording-mic-toggle[aria-pressed='false'],
+.recording-audio-toggle[aria-pressed='false'] {
   opacity: 0.58;
 }
 </style>
