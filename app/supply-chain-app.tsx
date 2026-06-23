@@ -44,6 +44,15 @@ type ApprovalRequest = {
   status: ApprovalStatus;
 };
 
+type PersonalTask = {
+  id: string;
+  actionLabel: string;
+  workflowKey: WorkflowKey;
+  ownerPersona: PersonaId;
+  detail: string;
+  status: "open" | "done";
+};
+
 type ActionNoticeTone = "success" | "pending" | "error";
 
 function messageText(message: UIMessage): string {
@@ -193,6 +202,7 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
   const [activePrompt, setActivePrompt] = useState("");
   const [sourceSelection, setSourceSelection] = useState<Record<string, boolean>>({});
   const [approvalRequests, setApprovalRequests] = useState<ApprovalRequest[]>([]);
+  const [personalTasks, setPersonalTasks] = useState<PersonalTask[]>([]);
   const [copiedMessageId, setCopiedMessageId] = useState("");
   const [recommendationNotice, setRecommendationNotice] = useState("");
   const [openedRecommendationSource, setOpenedRecommendationSource] = useState("");
@@ -305,10 +315,23 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
     const requester = mockUsers[persona];
     const reviewerPersona = result?.reviewerPersona ?? getActionReviewer(persona, action);
     if (!reviewerPersona) {
+      if (action.kind === "update" && action.label.toLowerCase().includes("task")) {
+        setPersonalTasks((current) => [
+          ...current,
+          {
+            id: `task-${crypto.randomUUID()}`,
+            actionLabel: action.label,
+            workflowKey,
+            ownerPersona: persona,
+            detail: action.detail,
+            status: "open",
+          },
+        ]);
+      }
       setActionMenuOpen(false);
       setActionNotice(
         result?.notice ??
-          `${action.kind === "draft" ? "Draft prepared" : action.kind === "share" ? "Mandate prepared" : "Action staged"} for ${requester.name}. ${action.detail}`,
+          `${action.kind === "draft" ? "Draft prepared" : action.kind === "share" ? "Mandate prepared" : action.label.toLowerCase().includes("task") ? "Task created" : "Action staged"} for ${requester.name}. ${action.detail}`,
       );
       setActionNoticeTone("success");
       return;
@@ -411,10 +434,19 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
     );
   }
 
+  function completeTask(id: string) {
+    setPersonalTasks((current) =>
+      current.map((task) =>
+        task.id === id && task.ownerPersona === persona ? { ...task, status: "done" } : task,
+      ),
+    );
+  }
+
   const incomingApprovals = approvalRequests.filter((request) => request.reviewerPersona === persona);
   const submittedApprovals = approvalRequests.filter(
     (request) => request.requesterPersona === persona && request.reviewerPersona !== persona,
   );
+  const ownedTasks = personalTasks.filter((task) => task.ownerPersona === persona);
 
   return (
     <main className="app-shell" data-theme={theme}>
@@ -679,6 +711,33 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
             )}
           </form>
         </section>
+
+        {ownedTasks.length > 0 && (
+          <section className="task-workflow" aria-label="Personal task list">
+            <div className="section-title">
+              <div><p className="eyebrow">Personal follow-up</p><h3>My tasks</h3></div>
+              <span className="source-note"><Check aria-hidden="true" />Assigned to {activeUser.name}</span>
+            </div>
+            <div className="task-list">
+              {ownedTasks.map((task) => (
+                <article className={`task-card status-${task.status}`} key={task.id}>
+                  <div>
+                    <strong>{task.actionLabel}</strong>
+                    <span>{task.detail}</span>
+                  </div>
+                  {task.status === "open" ? (
+                    <button type="button" onClick={() => completeTask(task.id)} aria-label={`Mark ${task.actionLabel} done`}>
+                      <Check aria-hidden="true" />
+                      Mark done
+                    </button>
+                  ) : (
+                    <span className="status-chip status-on-schedule">Done</span>
+                  )}
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
 
         {(incomingApprovals.length > 0 || submittedApprovals.length > 0) && (
           <section className="approval-workflow" aria-label="Human approval workflow">

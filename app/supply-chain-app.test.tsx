@@ -545,6 +545,35 @@ describe("SupplyChainApp", () => {
     await waitFor(() => expect(screen.queryByText(/Running action workflow/i)).not.toBeInTheDocument());
   });
 
+  it("creates self-assigned Outlook tasks without using the approval workflow", async () => {
+    mockChatAndActionStream({
+      actionLabel: "Create Outlook recovery task",
+      reviewerPersona: null,
+      reviewerName: null,
+      draft: "Create Outlook recovery task\n\nPrepared for Lukas Weber.",
+      notice: "Task created for Lukas Weber. Track DHL confirmation, FedEx backup status and Oberkochen receiving cutoff before 12:00.",
+      orchestration: "agents-sdk",
+      toolCalls: ["read_supply_chain_context", "prepare_action_workflow"],
+    });
+    render(<SupplyChainApp currentUser={mockUsers.logistics} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Open chat settings/i }));
+    fireEvent.click(screen.getByLabelText("Outlook"));
+
+    fireEvent.click(screen.getByRole("button", { name: /Show me potential delivery risks for this week/i }));
+    await screen.findByRole("button", { name: /Create Outlook recovery task/i });
+
+    fireEvent.click(screen.getByRole("button", { name: /Create Outlook recovery task/i }));
+
+    expect(await screen.findByText("My tasks")).toBeInTheDocument();
+    expect(screen.getByText("Create Outlook recovery task")).toBeInTheDocument();
+    expect(screen.queryByText("Approval queue")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Mark Create Outlook recovery task done/i }));
+
+    expect(screen.getByText("Done")).toBeInTheDocument();
+  });
+
   it("lets Lucia execute strategic actions without sending approval to Dana", async () => {
     mockChatAndActionStream({
       actionLabel: "Draft contract termination letter",

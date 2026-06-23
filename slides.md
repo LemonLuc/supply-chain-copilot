@@ -2,7 +2,7 @@
 theme: default
 title: Carl Zeiss AG x OpenAI | Executive Supply Chain Decision Deck
 info: |
-  Executive Slidev deck for selling an OpenAI API / SDK platform approach through the Supply Chain Hub demo.
+  Executive Slidev deck for selling an OpenAI platform approach through the Supply Chain Hub demo.
 transition: fade-out
 class: se-deck
 drawings:
@@ -13,7 +13,7 @@ record: true
 <section class="cover-slide">
   <p class="eyebrow">OpenAI Solutions Engineering</p>
   <h1 class="cover-title">From fragmented supply-chain signals to governed decisions</h1>
-  <p class="subtitle">A proposed OpenAI platform approach for ZEISS Supply Chain, Procurement and IT leadership</p>
+  <p class="subtitle">A proposed OpenAI platform approach for Zeiss Supply Chain Management and IT leadership</p>
 </section>
 
 ---
@@ -26,8 +26,8 @@ record: true
     <div class="nutshell-thesis">
       <p>OpenAI becomes the governed decision layer between ZEISS supply-chain data and operational action.</p>
       <div class="tldr-proof">
-        <b>ChatGPT-style front end</b>
-        <b>OpenAI API / SDK + ZEISS backend MCP integration</b>
+        <span>Executive chat experience</span>
+        <span>Enterprise integration and control layer</span>
       </div>
     </div>
     <div class="nutshell-cards">
@@ -91,9 +91,9 @@ record: true
   <p class="eyebrow">Solution Proposal</p>
   <h1>Supply Chain Hub as the enterprise decision interface</h1>
   <div class="solution-grid">
-    <div><h2>Communication interface</h2><p>A ChatGPT-style app where executives and operators ask business questions, inspect evidence and align on next steps.</p></div>
+    <div><h2>Communication interface</h2><p>An executive-grade conversation surface where teams ask business questions, inspect evidence and align on next steps.</p></div>
     <div><h2>Enterprise operating model</h2><p>Role scope, source ownership, approval paths and auditability turn the app into a governed way of working.</p></div>
-    <div><h2>System integration layer</h2><p>OpenAI API / SDK connects ZEISS systems, MCP tools, documents and workflow actions without replacing systems of record.</p></div>
+    <div><h2>System integration layer</h2><p>Connects ZEISS systems, documents, business tools and workflow actions without replacing systems of record.</p></div>
   </div>
   <div class="consequence-band outcome-list">
     <span>Business outcome</span>
@@ -112,59 +112,40 @@ record: true
   <p class="eyebrow">Reference architecture</p>
   <h1>Solution overview</h1>
   <div class="arch-canvas">
-    <div class="arch-zone"><h2>Supply Chain Hub app</h2><p>Ask, review evidence, approve.</p></div>
+    <div class="arch-zone"><h2>Supply Chain Hub app</h2><p>Executive conversation layer for asking, reviewing evidence and aligning next steps.</p></div>
     <div class="arch-connector">→</div>
-    <div class="arch-zone ai-zone"><h2>OpenAI integration</h2><p>API / SDK, <code>/api/chat</code>, MCP tools.</p></div>
+    <div class="arch-zone ai-zone"><h2>Intelligence layer</h2><p>Turns supply-chain questions into grounded reasoning, scenario options and workflow-ready recommendations.</p></div>
     <div class="arch-connector">→</div>
-    <div class="arch-zone governance-zone"><h2>Governance</h2><p>Role scope, source filters, masking, approvals.</p></div>
+    <div class="arch-zone controls-zone"><h2>Operating controls</h2><p>Role scope, trusted sources, financial masking, named review and auditability.</p></div>
     <div class="arch-connector">→</div>
-    <div class="arch-zone"><h2>ZEISS systems</h2><p>SAP, carriers, suppliers, files, workflows.</p></div>
-    <div class="arch-rail"><div><b>Ground</b><p>Assemble approved context.</p></div><div><b>Reason</b><p>Synthesize risk and options.</p></div><div><b>Act</b><p>Route high-impact changes to approval.</p></div></div>
-    <div class="arch-subgrid"><div><h2>MCP tool layer</h2><p>Risk, scenario, supplier and policy functions.</p></div><div><h2>Retrieval</h2><p>Approved documents, trackers and records.</p></div><div><h2>Cloudflare Developer Platform</h2><p>App deployed on Cloudflare for a fast, edge-ready demo path.</p></div></div>
+    <div class="arch-zone"><h2>ZEISS systems</h2><p>SAP, logistics, supplier, warehouse and document context stay systems of record.</p></div>
+    <div class="arch-rail"><div><b>Ground</b><p>Assemble trusted supply-chain context from selected enterprise sources.</p></div><div><b>Reason</b><p>Synthesize risk, options, trade-offs and assumptions for leaders.</p></div><div><b>Act</b><p>Route high-impact recommendations to owners and approval paths.</p></div></div>
+    <div class="arch-subgrid"><div><h2>Controlled tools</h2><p>Risk, scenario, supplier and policy functions connect to controlled business actions.</p></div><div><h2>Retrieval</h2><p>Documents, trackers and operational records ground every answer.</p></div><div><h2>Scale path</h2><p>The same pattern can extend to procurement, quality, manufacturing and finance.</p></div></div>
   </div>
 </section>
 
 ---
 
-<section class="slide-section workflow-slide">
+<section class="slide-section ops-slide decision-workflow-slide">
   <span class="slide-number">07</span>
-  <p class="eyebrow">Decision thinking</p>
-  <h1>From questions to governed action</h1>
-  <div class="process-line process-flow conceptual-flow">
-    <div><h2><b>1</b> Ask</h2><p>Executive questions framed in business language</p></div>
-    <div class="process-arrow">→</div>
-    <div><h2><b>2</b> Scope</h2><p>Role, source and policy boundaries</p></div>
-    <div class="process-arrow">→</div>
-    <div><h2><b>3</b> Ground</h2><p>Approved enterprise evidence and assumptions</p></div>
-    <div class="process-arrow">→</div>
-    <div><h2><b>4</b> Decide</h2><p>Options, trade-offs and confidence</p></div>
-    <div class="process-arrow">→</div>
-    <div><h2><b>5</b> Govern</h2><p>Human review and auditable action path</p></div>
-  </div>
-  <div class="model-band model-band-two">
-    <div><h2>Thought process</h2><ul><li>Start with the executive decision, not the system screen.</li><li>Ground each answer in approved operational evidence.</li><li>Expose trade-offs before routing action to human approval.</li></ul></div>
-    <div><h2>Why OpenAI</h2><ul><li>Natural-language interface for complex enterprise questions.</li><li>MCP-enabled tools connect reasoning with controlled business actions.</li><li>Governance patterns support source scope, approval paths and auditability.</li></ul></div>
-  </div>
-</section>
-
----
-
-<section class="slide-section ops-slide">
-  <span class="slide-number">08</span>
   <p class="eyebrow">Workflow example</p>
-  <h1>Executive workflow before switching to the live demo</h1>
+  <h1>Executive workflow: from question to action</h1>
   <div class="flow-map workflow-map">
-    <div><span>Trigger</span><p>Critical supplier delay threatens customer commitments</p></div>
+    <div><span>Trigger</span><p>Top customer shipment at risk: supplier date, SAP availability and carrier ETA do not match</p></div>
     <div class="flow-arrow">→</div>
-    <div><span>Question</span><p>Which orders are exposed and what can we do today?</p></div>
+    <div><span>Question</span><p>Can we protect the promise date, and what trade-off needs approval today?</p></div>
     <div class="flow-arrow">→</div>
-    <div><span>Evidence</span><p>SAP demand, supplier status, carrier milestones, inventory</p></div>
+    <div><span>Evidence</span><p>Open orders, inventory, supplier commits, carrier ETA and expedite cost</p></div>
     <div class="flow-arrow">→</div>
-    <div><span>Action</span><p>Recommended mitigation with owner, risk and approval path</p></div>
+    <div><span>Action</span><p>Best mitigation, customer impact, owner and required approval step</p></div>
   </div>
   <div class="before-after">
-    <div><h2>Before</h2><p>Teams reconcile trackers, SAP extracts and supplier emails before leadership can discuss trade-offs.</p></div>
-    <div><h2>After</h2><p>The executive sees a grounded recommendation, confidence level, cost exposure and required approval step in one interface.</p></div>
+    <div><h2>Before</h2><p>Teams spend the first escalation meeting reconciling SAP exports, supplier emails and freight updates before anyone can agree which customer orders are truly at risk.</p></div>
+    <div><h2>After</h2><p>Leaders see the exposed orders, root cause, options, cost trade-off and approval owner <strong>in one interface</strong>.</p></div>
+  </div>
+  <div class="workflow-takeaway">
+    <div><h2>What changes in the room</h2><p>The discussion starts from a shared recommendation, not from debating which spreadsheet or email thread is current.</p></div>
+    <div><h2>Why this matters</h2><p>ZEISS keeps system ownership intact while giving executives a faster path from risk signal to accountable action.</p></div>
   </div>
 </section>
 
@@ -177,7 +158,7 @@ record: true
 ---
 
 <section class="slide-section poc-slide">
-  <span class="slide-number">10</span>
+  <span class="slide-number">09</span>
   <p class="eyebrow">Proof of concept scorecard</p>
   <h1>Impact validation and success criteria</h1>
   <p class="poc-note">The first POC must prove both business impact and operating trust: faster decisions, better evidence and controlled action paths.</p>
@@ -187,7 +168,7 @@ record: true
       <h2>Impact validation</h2>
       <ol>
         <li><strong>Baseline</strong><p>Measure current risk-review cycle time, escalation volume and manual triage hours.</p></li>
-        <li><strong>Run the workflow</strong><p>Use one live supply-chain risk scenario with real source boundaries and human review.</p></li>
+        <li><strong>Run the workflow</strong><p>Use one live supply-chain risk scenario with real source boundaries and named review.</p></li>
         <li><strong>Read out value</strong><p>Compare avoided effort, decision speed and quality of evidence against baseline.</p></li>
       </ol>
     </div>
@@ -195,9 +176,9 @@ record: true
       <span>2</span>
       <h2>Measurable success criteria</h2>
       <div><b>25%</b><p>Faster weekly risk-review cycle versus baseline.</p></div>
-      <div><b>90%</b><p>Answers cite approved ZEISS sources and show assumptions.</p></div>
+      <div><b>90%</b><p>Answers cite trusted ZEISS sources and show assumptions.</p></div>
       <div><b>80%</b><p>Target users rate outputs useful for real workflows.</p></div>
-      <div><b>100%</b><p>High-impact actions route to human approval.</p></div>
+      <div><b>100%</b><p>High-impact actions route to accountable review.</p></div>
     </div>
   </div>
 </section>
@@ -205,7 +186,7 @@ record: true
 ---
 
 <section class="slide-section scale-slide">
-  <span class="slide-number">11</span>
+  <span class="slide-number">10</span>
   <p class="eyebrow">Future potential</p>
   <h1>Supply Chain Hub as the business blueprint</h1>
   <div class="expansion-grid">
@@ -214,24 +195,24 @@ record: true
     <div><h2>Manufacturing</h2><ul><li>Line impact analysis</li><li>Work instruction support</li><li>Maintenance handoffs</li></ul></div>
     <div><h2>Finance</h2><ul><li>Working capital views</li><li>Expedite-cost exposure</li><li>Scenario assumptions</li></ul></div>
   </div>
-  <p class="callout">The reusable pattern is the same: governed app experience, OpenAI API / SDK integration layer, approved enterprise data and human-controlled actions.</p>
+  <p class="callout">The repeatable blueprint is the same: conversational workspace, integration layer, enterprise context and accountable workflow ownership.</p>
 </section>
 
 ---
 
 <section class="slide-section rollout-slide proof-slide">
-  <span class="slide-number">12</span>
+  <span class="slide-number">11</span>
   <p class="eyebrow">Looking ahead</p>
   <h1>Proof of value including guardrails</h1>
   <p class="timeline-kicker">Four-week proof of concept maximum, followed by a business decision on pilot scale.</p>
   <div class="timeline">
     <div><span>Week 0</span><h2>Align</h2><p>Sponsor, workflow owner, success metrics, data boundaries.</p></div>
     <div><span>Week 1</span><h2>Connect</h2><p>Representative sources, role scopes, approval policy.</p></div>
-    <div><span>Week 2</span><h2>Build</h2><p>App workflow, MCP tools, grounding and audit trail.</p></div>
+    <div><span>Week 2</span><h2>Build</h2><p>App workflow, business tools, grounding and audit trail.</p></div>
     <div><span>Week 3</span><h2>Validate</h2><p>User feedback, answer quality checks, security review.</p></div>
     <div><span>Week 4</span><h2>Decide</h2><p>Impact readout, guardrail review, pilot recommendation.</p></div>
   </div>
-  <p class="callout">What is needed to get started: executive sponsorship, access to representative systems and documents, a named business process owner and agreement on governance boundaries for the first controlled pilot.</p>
+  <p class="callout">What is needed to get started: executive sponsorship, access to representative systems and documents, a named business process owner and agreement on operating boundaries for the first controlled pilot.</p>
 </section>
 
 ---
@@ -243,13 +224,13 @@ record: true
 ---
 
 <section class="slide-section">
-  <span class="slide-number">14</span>
+  <span class="slide-number">13</span>
   <p class="eyebrow">Annex</p>
   <h1>Behind the scenes - how Supply Chain Hub was built</h1>
   <div class="build-grid">
-    <div><h2>Experience</h2><ul><li>Next.js and React UI</li><li>AI SDK <code>useChat</code></li><li>Source controls and approval UI</li></ul></div>
-    <div><h2>AI route</h2><ul><li><code>/api/chat</code> validates requests</li><li>Builds server-side context</li><li>Streams OpenAI responses or deterministic fallback</li></ul></div>
-    <div><h2>Governance</h2><ul><li>Persona policy</li><li>Workflow access</li><li>Source filtering and financial masking</li></ul></div>
-    <div><h2>Runtime</h2><ul><li>App deployed on Cloudflare Developer Platform</li><li>OpenNext + Cloudflare Worker path</li><li>Tests for chat, permissions and UI flows</li></ul></div>
+    <div><h2>Experience</h2><ul><li>Next.js App Router and React UI</li><li>AI SDK <code>useChat</code> transport</li><li>Persona, model, thinking and source controls</li></ul></div>
+    <div><h2>Chat route</h2><ul><li><code>/api/chat</code> validates the request</li><li>Builds server-side context from selected sources</li><li>Streams OpenAI Responses or deterministic demo output</li></ul></div>
+    <div><h2>Action route</h2><ul><li><code>/api/actions</code> checks persona and workflow access</li><li>Agents SDK prepares tools and reviewer handoffs</li><li>Fallback action results preserve demo reliability</li></ul></div>
+    <div><h2>Controls and runtime</h2><ul><li>Role policy filters workflows and financial data</li><li>Tool and retrieval hooks live in <code>chat-extensions.ts</code></li><li>OpenNext deploys the app to Cloudflare Workers</li></ul></div>
   </div>
 </section>

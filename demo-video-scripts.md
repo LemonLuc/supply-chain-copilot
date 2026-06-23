@@ -86,21 +86,23 @@ To be continued onsite at ZEISS HQ in Oberkochen next week. I look forward to sh
 
 ## Script 3: Executive Business Value
 
-**0:00-0:45 - Slide 5, Camera Visible**
+**0:00-1:05 - Slide 5, Camera Visible**
 
-Meet Supply Chain Hub: a control-tower interface that helps supply-chain teams move from scattered operational signals to governed decisions.
+Meet Supply Chain Hub: the enterprise decision interface for moving from fragmented supply-chain signals to governed action.
 
-The business problem is simple to describe and expensive to live with. One disruption is interpreted differently by every function. Logistics sees a carrier milestone. Planning sees a production buffer. Procurement sees a supplier relationship. Leadership sees customer commitment risk.
+The business problem is simple to describe and expensive to live with. One disruption is interpreted differently by every function. Logistics sees a carrier milestone. Planning sees a production buffer. Procurement sees a supplier relationship. Leadership sees customer commitment risk. The result is manual effort, slower decisions, and avoidable escalation meetings.
 
-Slide 5 shows the proposed answer: a communication interface for business questions, an enterprise operating model for trust, and an integration layer that connects ZEISS systems, tools, documents, and workflows.
+Slide 5 shows the proposed answer in three layers. First, a communication interface: a ChatGPT-style app where executives and operators ask business questions, inspect evidence, and align on next steps. Second, an enterprise operating model: role scope, source ownership, approval paths, and auditability, so this becomes a governed way of working rather than a loose chatbot. Third, a system integration layer: OpenAI API and SDK connecting ZEISS systems, MCP tools, documents, and workflow actions without replacing systems of record.
 
-**0:45-4:25 - Live Tool, Camera Hidden**
+The business outcome is the part I want to make concrete in the demo: reduce manual effort, improve decision precision with source-backed recommendations, and give leaders a reliable path from signal to action and approval.
 
-Now I switch to the live tool.
+Now I will switch from the slide into the live tool.
+
+**1:05-4:45 - Live Tool, Camera Hidden**
 
 I start with settings. A new user can configure which tools are available for the workflow: SAP for purchase orders and material data, shipping providers for DHL and FedEx milestones, EWM warehouse for stock, and Outlook for follow-up actions.
 
-This is important because the enterprise value is not a generic chatbot. The value is a governed interface across trusted systems, with role scope, source controls, and approval paths.
+This is important because the enterprise value is not a generic chatbot. The value is a governed interface across trusted systems. The model does not get everything. It gets the approved sources for this user, this role, and this decision.
 
 Now I ask the tool: "Show me potential delivery risks for this week."
 
@@ -114,17 +116,23 @@ For executives, this is the key difference between another dashboard and a decis
 
 Now I trigger the operational next step. From the Actions menu, I can draft the DHL Freight email asking for recovery routing and confirmed ETA. I can create the Outlook follow-up task to track the recovery confirmation before noon. And I can send Dana Narid the summary for review.
 
-This is human in the loop by design. Supply Chain Hub stages actions and routes approval. It does not silently change the supply chain.
+This is human in the loop by design. Supply Chain Hub stages actions and routes approval. It does not silently change the supply chain. It packages the recommendation, evidence, owner, and next step so the responsible human can decide quickly and with context.
 
-**4:25-5:30 - Slide 6, Camera Visible**
+That is the business value of the workflow: one operational question becomes an evidence-backed recommendation and a controlled action path.
 
-Back on Slide 6, the strategic pattern is reusable: the app lets users ask, review evidence, and approve. The OpenAI integration grounds and reasons. Governance enforces role scope and approval. ZEISS systems stay authoritative.
+**4:45-6:00 - Slide 6, Camera Visible**
 
-This is also why the prototype is intentionally specific. It is not trying to demo every possible supply-chain use case in one screen. It shows one repeatable pattern that can expand to alternate sourcing, supplier quality, procurement negotiation, and executive portfolio governance.
+Back on Slide 6, this is the reference architecture behind what we just saw.
 
-But this is only the first act. What does Dana Narid do with the review? Does DHL recovery protect the line, or does the organization need a different freight reliability strategy? And how would this same layer handle supplier alternatives and executive portfolio decisions?
+On the left, Supply Chain Hub is the ChatGPT-style front end: ask, review evidence, and align next steps. Next is the OpenAI API / SDK layer. That layer connects reasoning to ZEISS backend MCP integration, source context, and workflow actions. Then governance applies role scope, approved sources, financial masking, human review, and auditability. And on the right, ZEISS systems stay systems of record: SAP, logistics, supplier, warehouse, and document context.
 
-That is what I will show onsite at ZEISS HQ in Oberkochen next week.
+The rail underneath is the operating pattern: ground, reason, act. Ground the answer in approved supply-chain context. Reason over risk, options, trade-offs, and assumptions. Act by routing high-impact recommendations to owners and approval paths.
+
+The bottom row shows why this can scale: MCP tools for risk, scenario, supplier, and policy functions; retrieval over approved documents and operational records; and a scale path into procurement, quality, manufacturing, and finance.
+
+So the cliff hanger is this: we saw one DHL delivery exception. But what lands on Dana Narid's desk next? Does her decision only recover one shipment, or does it change how ZEISS measures DHL reliability as a freight partner? And if the recovery fails, which alternate supplier, production, or executive workflow should fire next?
+
+That is the story I will continue onsite at ZEISS HQ in Oberkochen next week.
 
 ## Script 4: Technical Solutions Engineering
 
