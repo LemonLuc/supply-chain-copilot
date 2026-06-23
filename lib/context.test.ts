@@ -24,30 +24,37 @@ describe("buildAppContext", () => {
   it("includes financial fields for procurement leads", () => {
     const context = buildAppContext("risks", "procurement");
 
-    expect(context.persona.canViewFinancials).toBe(true);
-    expect(context.answer.financialMetrics).toEqual([
-      ["Expedite option", "€8,400"],
-      ["Avoided downtime", "€185,000"],
-    ]);
-    expect(context.rows[0]).toHaveProperty("financial", "€185K downtime exposure");
+    expect(context.persona.canViewFinancials).toBe(false);
+    expect(context.answer).not.toHaveProperty("financialMetrics");
+    expect(context.rows[0]).not.toHaveProperty("financial");
   });
 
   it("limits operational evidence to multiple selected authorized sources", () => {
-    const context = buildAppContext("risks", "logistics", ["dhl", "warehouse", "unknown"]);
+    const context = buildAppContext("risks", "logistics", ["carriers", "warehouse", "unknown"]);
 
-    expect(context.sources.map((source) => source.id)).toEqual(["dhl", "warehouse"]);
-    expect(context.selectedAuthorizedSources.map((source) => source.id)).toEqual(["dhl", "warehouse"]);
-    expect(context.activity.map((step) => step.tool)).toEqual(["DHL Freight MCP", "SAP EWM MCP"]);
-    expect(context.rows.map((row) => row.subject)).toEqual(["PO 4500872319 · DHL Freight"]);
+    expect(context.sources.map((source) => source.id)).toEqual(["carriers", "warehouse"]);
+    expect(context.selectedAuthorizedSources.map((source) => source.id)).toEqual(["carriers", "warehouse"]);
+    expect(context.activity.map((step) => step.tool)).toEqual(["Shipping providers MCP", "SAP EWM MCP"]);
+    expect(context.rows.map((row) => row.subject)).toEqual(["PO 4500872319 · DHL Freight", "PO 4500872481 · FedEx Priority"]);
   });
 
-  it("limits operational evidence to one selected authorized source", () => {
-    const context = buildAppContext("risks", "logistics", ["fedex"]);
+  it("hides Outlook-gated actions when Outlook is not selected", () => {
+    const context = buildAppContext("risks", "logistics", ["sap", "carriers", "warehouse"]);
 
-    expect(context.sources.map((source) => source.id)).toEqual(["fedex"]);
-    expect(context.selectedAuthorizedSources.map((source) => source.id)).toEqual(["fedex"]);
-    expect(context.activity.map((step) => step.tool)).toEqual(["FedEx MCP"]);
-    expect(context.rows.map((row) => row.subject)).toEqual(["PO 4500872481 · FedEx Priority"]);
+    expect(context.recommendedActions.map((action) => action.label)).not.toContain("Write Dana Narid for review");
+    expect(context.recommendedActions.map((action) => action.label)).not.toContain("Draft email to DHL Freight");
+    expect(context.recommendedActions.map((action) => action.label)).toContain("Update SAP promised date");
+  });
+
+  it("includes Outlook-gated actions when Outlook is selected", () => {
+    const context = buildAppContext("risks", "logistics", ["sap", "carriers", "warehouse", "outlook"]);
+
+    expect(context.recommendedActions.map((action) => action.label)).toEqual([
+      "Draft email to DHL Freight",
+      "Create Outlook follow-up task",
+      "Write Dana Narid for review",
+      "Update SAP promised date",
+    ]);
   });
 
   it("falls back to the risk radar when logistics requests a restricted workflow", () => {
@@ -59,7 +66,7 @@ describe("buildAppContext", () => {
     expect(context).not.toHaveProperty("decisionSupport");
   });
 
-  it("includes workflow-specific synthetic decision data for authorized executive requests", () => {
+  it("includes workflow-specific decision data for authorized executive requests", () => {
     const context = buildAppContext("consolidate", "executive");
 
     expect(context.workflow.key).toBe("consolidate");
@@ -71,21 +78,20 @@ describe("buildAppContext", () => {
       { supplier: "Supplier A", cost: "High", resilience: "Low", recommendation: "Protect and qualify backup" },
       { supplier: "Supplier Q", cost: "Medium", resilience: "Low", recommendation: "Retain for redundancy" },
     ]);
-    expect(context.approval).toEqual({
-      label: "C-level approval required",
-      detail:
-        "Any supplier termination or material volume reallocation remains blocked until an executive reviewer approves the decision record.",
-    });
+    expect(context.approval).toBeUndefined();
+    expect(context.recommendedActions.map((action) => action.label)).toEqual([
+      "Draft contract termination letter",
+      "Prepare board decision record",
+      "Create supplier negotiation mandate",
+    ]);
   });
 
-  it("includes SharePoint workbook review data for executive supplier register prompts when authorized", () => {
+  it("keeps executives on the strategic portfolio workflow", () => {
     const context = buildAppContext("delay", "executive", ["sap", "quality", "excel", "capacity", "outlook"]);
 
-    expect(context.workflow.key).toBe("delay");
-    expect(context.sources.map((source) => source.id)).toContain("excel");
-    expect(context.documents?.map((document) => document.name)).toEqual(["Supplier Risk & Capacity Register.xlsx"]);
-    expect(JSON.stringify(context.documents)).toContain("Mechatronik Süd capacity increased from 6 to 8 units");
-    expect(JSON.stringify(context.documents)).toContain("version 24.06.21-rc3");
+    expect(context.workflow.key).toBe("risks");
+    expect(context.workflow.accessAllowed).toBe(false);
+    expect(context).not.toHaveProperty("documents");
   });
 
   it("includes SharePoint workbook review data for Dana when the Excel source is selected", () => {
@@ -146,9 +152,7 @@ describe("buildRoleToolSources", () => {
 
     expect(sources.map((source) => source.toolId)).toEqual([
       "risks:sap",
-      "risks:dhl",
-      "risks:fedex",
-      "risks:ups",
+      "risks:carriers",
       "risks:warehouse",
       "risks:outlook",
     ]);
@@ -159,10 +163,10 @@ describe("buildRoleToolSources", () => {
   it("exposes sources from all three authorized workflows to executives", () => {
     const sources = buildRoleToolSources("executive");
 
-    expect(sources.some((source) => source.toolId === "risks:dhl")).toBe(true);
-    expect(sources.some((source) => source.toolId === "delay:quality")).toBe(true);
     expect(sources.some((source) => source.toolId === "consolidate:contracts")).toBe(true);
-    expect(sources).toHaveLength(18);
+    expect(sources.some((source) => source.toolId.startsWith("risks:"))).toBe(false);
+    expect(sources.some((source) => source.toolId.startsWith("delay:"))).toBe(false);
+    expect(sources).toHaveLength(6);
   });
 });
 
@@ -172,7 +176,7 @@ describe("resolveWorkflowForPrompt", () => {
   });
 
   it("routes the supplier risk register review prompt to the SharePoint-backed workflow for executives", () => {
-    expect(resolveWorkflowForPrompt("Review Supplier Risk & Capacity Register.xlsx and show me recent changes.", "executive")).toBe("delay");
+    expect(resolveWorkflowForPrompt("Which supplier consolidation options improve savings and resilience?", "executive")).toBe("consolidate");
   });
 
   it("falls back to an authorized workflow when the matching workflow is restricted", () => {

@@ -17,12 +17,12 @@ const personaPolicies: Record<
     allowedWorkflows: ["risks"],
   },
   procurement: {
-    canViewFinancials: true,
+    canViewFinancials: false,
     allowedWorkflows: ["risks", "delay"],
   },
   executive: {
     canViewFinancials: true,
-    allowedWorkflows: ["risks", "delay", "consolidate"],
+    allowedWorkflows: ["consolidate"],
   },
 };
 

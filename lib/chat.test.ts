@@ -38,7 +38,7 @@ describe("chat grounding", () => {
     const prompt = buildSystemPrompt(buildAppContext("delay", "procurement"));
 
     expect(prompt).toContain("One approved alternate can protect the first eight builds");
-    expect(prompt).toContain("€21,600");
+    expect(prompt).not.toContain("€21,600");
     expect(prompt).toContain("Never reveal private chain-of-thought");
   });
 
@@ -46,27 +46,28 @@ describe("chat grounding", () => {
     const reply = generateMockReply("What should I do first?", buildAppContext("risks"));
 
     expect(reply).toContain("DHL Freight shipment 00340434161094000012");
-    expect(reply).toContain("Draft email to DHL Freight");
+    expect(reply).toContain("Update SAP promised date");
     expect(reply).toContain("SAP S/4HANA MCP");
     expect(reply).toContain("demo mode");
   });
 
   it("does not include deselected source evidence in prompts or demo replies", () => {
-    const context = buildAppContext("risks", "logistics", ["sap", "fedex", "warehouse"]);
+    const context = buildAppContext("risks", "logistics", ["sap", "warehouse"]);
     const prompt = buildSystemPrompt(context);
     const reply = generateMockReply("What should I do first?", context);
 
     expect(prompt).not.toContain("DHL Freight");
     expect(prompt).not.toContain("00340434161094000012");
     expect(prompt).not.toContain("PO 4500872319");
+    expect(prompt).not.toContain("FedEx");
+    expect(prompt).not.toContain("PO 4500872481");
     expect(reply).not.toContain("DHL Freight");
     expect(reply).not.toContain("00340434161094000012");
-    expect(prompt).toContain("FedEx");
-    expect(reply).toContain("FedEx");
+    expect(reply).not.toContain("FedEx");
   });
 
   it("grounds supplier register review answers in selected SharePoint workbook data", () => {
-    const context = buildAppContext("delay", "executive", ["sap", "quality", "excel", "capacity", "outlook"]);
+    const context = buildAppContext("delay", "procurement", ["sap", "quality", "excel", "capacity", "outlook"]);
     const prompt = buildSystemPrompt(context);
     const reply = generateMockReply("Review Supplier Risk & Capacity Register.xlsx and show me recent changes.", context);
 
@@ -95,16 +96,22 @@ describe("chat grounding", () => {
   });
 
   it("answers financial questions only when the context permits it", () => {
-    const procurementReply = generateMockReply(
+    const executiveReply = generateMockReply(
       "What is the cost impact?",
-      buildAppContext("risks", "procurement"),
+      buildAppContext("consolidate", "executive"),
     );
     const logisticsReply = generateMockReply(
       "What is the cost impact?",
       buildAppContext("risks", "logistics"),
     );
+    const procurementReply = generateMockReply(
+      "What is the cost impact?",
+      buildAppContext("risks", "procurement"),
+    );
 
-    expect(procurementReply).toContain("€185,000");
+    expect(executiveReply).toContain("€740K");
+    expect(procurementReply).not.toContain("€185,000");
+    expect(procurementReply).toContain("not available to your signed-in role");
     expect(logisticsReply).not.toContain("€185,000");
     expect(logisticsReply).toContain("not available to your signed-in role");
   });

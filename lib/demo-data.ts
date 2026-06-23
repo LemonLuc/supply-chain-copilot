@@ -36,6 +36,9 @@ export type ResultRow = {
   status: string;
   evidence: string;
   sourceIds: string[];
+  affectedMaterial?: string;
+  expectedArrival?: string;
+  productionBuffer?: string;
   financial?: string;
 };
 
@@ -107,24 +110,22 @@ export const workflows: Record<WorkflowKey, Workflow> = {
       "Checks open purchase orders and live carrier milestones, then reports only operational exceptions relevant to your role.",
     minimumPersona: "logistics",
     accessLabel: "Available to all supply chain roles",
-    sourceStatus: "6 available tools · live demo data",
+    sourceStatus: "4 available tools · live demo data",
     suggestedPrompts: [
       "Show me potential delivery risks for this week.",
-      "Review Supplier Risk & Capacity Register.xlsx and show me recent changes.",
       "Check whether any carrier milestone changed overnight.",
+      "Which shipments need pickup confirmation before noon?",
+      "Create a Monday follow-up plan for delayed freight.",
     ],
     sources: [
       { id: "sap", name: "SAP S/4HANA", category: "ERP MCP", detail: "POs, material master, promised dates", selected: true },
-      { id: "dhl", name: "DHL Freight", category: "Carrier MCP", detail: "Road freight milestones and exceptions", selected: true },
-      { id: "fedex", name: "FedEx", category: "Carrier MCP", detail: "Priority shipment tracking", selected: true },
-      { id: "ups", name: "UPS", category: "Carrier MCP", detail: "Parcel and customs events", selected: false },
+      { id: "carriers", name: "Shipping providers", category: "Carrier MCP", detail: "DHL, FedEx, UPS milestones and exceptions", selected: true },
       { id: "warehouse", name: "EWM warehouse", category: "SAP MCP", detail: "Goods receipts and available stock", selected: true },
       { id: "outlook", name: "Outlook", category: "Microsoft 365 MCP", detail: "Draft operational follow-ups", selected: false },
     ],
     activity: [
-      { tool: "SAP S/4HANA MCP", detail: "Read PO 4500872319 and material N-FK5-110-32", result: "480 blanks due 24 June", sourceIds: ["sap", "dhl"] },
-      { tool: "DHL Freight MCP", detail: "Checked shipment 00340434161094000012", result: "Hub departure missed by 19 hours", sourceIds: ["dhl"] },
-      { tool: "FedEx MCP", detail: "Checked backup parcel 771924603189", result: "On schedule for 23 June", sourceIds: ["fedex"] },
+      { tool: "SAP S/4HANA MCP", detail: "Read PO 4500872319 and material N-FK5-110-32", result: "480 blanks due 24 June", sourceIds: ["sap", "carriers"] },
+      { tool: "Shipping providers MCP", detail: "Checked DHL 00340434161094000012, FedEx 771924603189 and UPS exception feed", result: "DHL hub departure missed; FedEx backup remains on schedule", sourceIds: ["carriers"] },
       { tool: "SAP EWM MCP", detail: "Read Jena receiving stock and reservations", result: "2.5 production days available", sourceIds: ["warehouse"] },
     ],
     analysisTrace: [
@@ -147,9 +148,10 @@ export const workflows: Record<WorkflowKey, Workflow> = {
       ["Avoided downtime", "€185,000"],
     ],
     actions: [
-      { label: "Draft email to DHL Freight", detail: "Ask for recovery routing and confirmed ETA.", kind: "draft", sourceIds: ["dhl"] },
-      { label: "Notify logistics team lead", detail: "Prepare a concise Teams and email update.", kind: "draft" },
-      { label: "Update SAP promised date", detail: "Write 25 June to PO 4500872319 after confirmation.", kind: "update", sourceIds: ["sap", "dhl"] },
+      { label: "Draft email to DHL Freight", detail: "Ask for recovery routing and confirmed ETA.", kind: "draft", sourceIds: ["carriers", "outlook"] },
+      { label: "Create Outlook follow-up task", detail: "Track DHL recovery confirmation and pickup cutoff before 12:00.", kind: "update", sourceIds: ["outlook"] },
+      { label: "Write Dana Narid for review", detail: "Send the delivery risk summary to the procurement team lead.", kind: "approval", sourceIds: ["outlook"] },
+      { label: "Update SAP promised date", detail: "Write 25 June to PO 4500872319 after confirmation.", kind: "update", sourceIds: ["sap", "carriers"] },
     ],
     rows: [
       {
@@ -157,7 +159,10 @@ export const workflows: Record<WorkflowKey, Workflow> = {
         detail: "480 N-FK5 optical glass blanks",
         status: "Attention",
         evidence: "Leipzig departure missed; ETA moved from 24 to 25 June",
-        sourceIds: ["dhl"],
+        sourceIds: ["carriers"],
+        affectedMaterial: "480 N-FK5 optical glass blanks",
+        expectedArrival: "Thu, 25 Jun",
+        productionBuffer: "2.5 days",
         financial: "€185K downtime exposure",
       },
       {
@@ -165,7 +170,10 @@ export const workflows: Record<WorkflowKey, Workflow> = {
         detail: "60 N-FK5 optical glass blanks",
         status: "On schedule",
         evidence: "Departed Frankfurt; delivery due 23 June, 10:30",
-        sourceIds: ["fedex"],
+        sourceIds: ["carriers"],
+        affectedMaterial: "60 N-FK5 optical glass blanks",
+        expectedArrival: "Tue, 23 Jun 10:30",
+        productionBuffer: "Backup quantity protecting line start",
         financial: "€8.4K expedite charge",
       },
     ],
@@ -182,7 +190,8 @@ export const workflows: Record<WorkflowKey, Workflow> = {
     suggestedPrompts: [
       "What approved alternates can cover the delayed turret assemblies?",
       "Which production orders can use an approved alternate turret?",
-      "Prepare the supplier risk register update for the logistics lead.",
+      "Assign the carrier recovery check for the uncovered builds.",
+      "Which supplier decision needs Lucia Lopez's review?",
     ],
     sources: [
       { id: "sap", name: "SAP S/4HANA", category: "ERP MCP", detail: "BOM where-used, orders, inventory", selected: true },
@@ -219,8 +228,9 @@ export const workflows: Record<WorkflowKey, Workflow> = {
     ],
     actions: [
       { label: "Add comment to supplier risk register", detail: "Update the primary supplier row with delay, owner and next review.", kind: "update" },
-      { label: "Share risk register with logistics lead", detail: "Prepare the current Excel view for the department lead.", kind: "share" },
-      { label: "Draft alternate capacity request", detail: "Ask Mechatronik Süd to reserve eight MT-440B units.", kind: "draft" },
+      { label: "Assign recovery check to logistics", detail: "Create the carrier recovery task for the logistics planner to execute.", kind: "share" },
+      { label: "Draft alternate capacity request", detail: "Ask Mechatronik Süd to reserve eight MT-440B units.", kind: "draft", sourceIds: ["outlook"] },
+      { label: "Ask Lucia Lopez for exception review", detail: "Escalate the uncovered six-build gap for C-level decision.", kind: "approval", sourceIds: ["outlook"] },
     ],
     rows: [
       {
@@ -229,6 +239,9 @@ export const workflows: Record<WorkflowKey, Workflow> = {
         status: "Conditional approval",
         evidence: "8 units in 6 days; incoming torque test required",
         sourceIds: ["quality", "capacity", "sap"],
+        affectedMaterial: "MT-440B objective turret alternate",
+        expectedArrival: "Within 6 days",
+        productionBuffer: "8 of 14 builds protected",
         financial: "€2,700 premium per unit",
       },
       {
@@ -237,6 +250,9 @@ export const workflows: Record<WorkflowKey, Workflow> = {
         status: "Not approved",
         evidence: "Dimensional review complete; endurance validation still open",
         sourceIds: ["quality", "excel"],
+        affectedMaterial: "OM-17 objective turret alternate",
+        expectedArrival: "Not released",
+        productionBuffer: "0 released builds protected",
         financial: "Commercial quote pending",
       },
     ],
@@ -313,11 +329,12 @@ export const workflows: Record<WorkflowKey, Workflow> = {
       "Combines commercial and operational evidence, applies resilience guardrails, and routes consequential actions to accountable human reviewers.",
     minimumPersona: "executive",
     accessLabel: "Chief Logistics Officer only · executive approval enforced",
-    sourceStatus: "7 available tools · governance policy active",
+    sourceStatus: "6 available tools · governance policy active",
     suggestedPrompts: [
       "Show supplier consolidation options with cost and resilience tradeoffs.",
-      "Which tail-spend suppliers can be consolidated under our dual-source guardrail?",
-      "Prepare an executive review pack for the recommended changes.",
+      "Which supplier relationships should we consolidate without weakening resilience?",
+      "Where can we capture savings while protecting strategic supply continuity?",
+      "Draft a board-level decision record for supplier consolidation.",
     ],
     sources: [
       { id: "sap", name: "SAP spend analytics", category: "ERP MCP", detail: "Category spend and purchase history", selected: true },
@@ -331,14 +348,14 @@ export const workflows: Record<WorkflowKey, Workflow> = {
       { tool: "SAP Spend MCP", detail: "Aggregated 12 months of spend by category and supplier", result: "42 active suppliers across 9 categories" },
       { tool: "Contract RAG", detail: "Retrieved notice periods and volume commitments", result: "Three contracts eligible for review this quarter" },
       { tool: "Resilience MCP", detail: "Scored capacity, location and qualification redundancy", result: "Two consolidation options pass dual-source policy" },
-      { tool: "Policy RAG", detail: "Applied procurement policy SC-17 and approval matrix", result: "Contract termination requires C-level approval" },
+      { tool: "Policy RAG", detail: "Applied procurement policy SC-17 and approval matrix", result: "CLO can prepare final decision records; no downstream department review required" },
     ],
     analysisTrace: [
       { label: "Understand request", detail: "Identify the portfolio scope, decision criteria and requested action.", outcome: "Cost versus resilience · consolidation" },
       { label: "Check access", detail: "Verify Chief Logistics Officer access to portfolio and financial data.", outcome: "Executive view authorized" },
       { label: "Retrieve evidence", detail: "Combine spend, contracts, quality, capacity and resilience records.", outcome: "42 suppliers across nine categories" },
       { label: "Validate evidence", detail: "Apply dual-source, quality, notice-period and continuity guardrails.", outcome: "Two candidates pass all checks" },
-      { label: "Prepare response", detail: "Create recommendations while blocking irreversible supplier actions.", outcome: "Executive review required before termination" },
+      { label: "Prepare response", detail: "Create recommendations and executive-ready drafts while blocking automatic supplier termination.", outcome: "Lucia remains final decision maker" },
     ],
     headline: "Two consolidation candidates pass the resilience guardrails",
     summary:
@@ -353,9 +370,9 @@ export const workflows: Record<WorkflowKey, Workflow> = {
       ["Transition budget", "€180K"],
     ],
     actions: [
-      { label: "Prepare executive review pack", detail: "Create the evidence summary, heat map and decision record.", kind: "draft" },
-      { label: "Request executive review", detail: "Route the recommendation to the C-level approval queue.", kind: "approval" },
-      { label: "Draft contract termination", detail: "Prepare a non-binding draft; no notice is sent.", kind: "draft" },
+      { label: "Draft contract termination letter", detail: "Prepare a non-binding notice draft for Supplier H and Supplier M; no notice is sent.", kind: "draft" },
+      { label: "Prepare board decision record", detail: "Create the evidence summary, heat map and executive decision log.", kind: "draft" },
+      { label: "Create supplier negotiation mandate", detail: "Set savings target, guardrails and fallback terms for the procurement team.", kind: "share" },
     ],
     rows: [
       {
@@ -364,6 +381,9 @@ export const workflows: Record<WorkflowKey, Workflow> = {
         status: "Consolidation candidate",
         evidence: "Validated capacity at two suppliers; stable service and quality",
         sourceIds: ["sap", "contracts", "quality", "resilience", "policy"],
+        affectedMaterial: "Sterile packaging supplier portfolio",
+        expectedArrival: "Decision window this quarter",
+        productionBuffer: "Dual-source resilience maintained",
         financial: "€410K–€520K opportunity",
       },
       {
@@ -372,6 +392,9 @@ export const workflows: Record<WorkflowKey, Workflow> = {
         status: "Consolidation candidate",
         evidence: "Interchangeable drawings; three qualified sources in Germany",
         sourceIds: ["sap", "contracts", "quality", "resilience", "policy"],
+        affectedMaterial: "Standard machined brackets portfolio",
+        expectedArrival: "Decision window this quarter",
+        productionBuffer: "Three qualified sources remain",
         financial: "€330K–€440K opportunity",
       },
       {
@@ -380,6 +403,9 @@ export const workflows: Record<WorkflowKey, Workflow> = {
         status: "Protected",
         evidence: "Limited qualified furnace capacity; dual-source guardrail applies",
         sourceIds: ["sap", "contracts", "quality", "resilience", "policy"],
+        affectedMaterial: "Optical glass blanks",
+        expectedArrival: "No consolidation action",
+        productionBuffer: "Protected dual-source category",
         financial: "No consolidation recommended",
       },
     ],
@@ -390,11 +416,6 @@ export const workflows: Record<WorkflowKey, Workflow> = {
       { supplier: "Supplier A", cost: "High", resilience: "Low", recommendation: "Protect and qualify backup" },
       { supplier: "Supplier Q", cost: "Medium", resilience: "Low", recommendation: "Retain for redundancy" },
     ],
-    approval: {
-      label: "C-level approval required",
-      detail:
-        "Any supplier termination or material volume reallocation remains blocked until an executive reviewer approves the decision record.",
-    },
   },
 };
 

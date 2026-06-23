@@ -6,25 +6,29 @@ describe("operational workflow data", () => {
   it("models a Monday delivery radar with carrier evidence and actions", () => {
     expect(workflows.risks.question).toContain("N-FK5");
     expect(workflows.risks.sources.map((source) => source.name)).toEqual(
-      expect.arrayContaining(["SAP S/4HANA", "DHL Freight", "FedEx"]),
+      expect.arrayContaining(["SAP S/4HANA", "Shipping providers", "Outlook"]),
     );
     expect(workflows.risks.actions.map((action) => action.label)).toEqual(
-      expect.arrayContaining(["Draft email to DHL Freight", "Update SAP promised date"]),
+      expect.arrayContaining(["Draft email to DHL Freight", "Write Dana Narid for review", "Update SAP promised date"]),
     );
   });
 
-  it("models role-restricted alternatives and an executive approval workflow", () => {
+  it("models role-restricted alternatives and executive decision actions", () => {
     expect(workflows.delay.minimumPersona).toBe("procurement");
     expect(workflows.delay.question).toContain("objective turret");
+    expect(workflows.delay.suggestedPrompts.join(" ")).not.toContain("Lukas");
+    expect(workflows.delay.actions.map((action) => action.label)).not.toContain("Share risk register with Lukas");
+    expect(workflows.delay.actions.map((action) => action.label)).toContain("Assign recovery check to logistics");
     expect(workflows.consolidate.minimumPersona).toBe("executive");
-    expect(workflows.consolidate.approval?.label).toBe("C-level approval required");
+    expect(workflows.consolidate.approval).toBeUndefined();
+    expect(workflows.consolidate.actions.map((action) => action.label)).toContain("Draft contract termination letter");
   });
 
   it("stores auditable activity rather than hidden model reasoning", () => {
     expect(workflows.risks.activity).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ tool: "SAP S/4HANA MCP" }),
-        expect.objectContaining({ tool: "DHL Freight MCP" }),
+        expect.objectContaining({ tool: "Shipping providers MCP" }),
       ]),
     );
     expect(workflows.risks.analysisTrace).toEqual(

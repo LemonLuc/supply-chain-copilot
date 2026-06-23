@@ -63,6 +63,9 @@ export function asksForWorkbookReview(question: string): boolean {
 
 export function generateMockReply(question: string, context: AppContext): string {
   const [firstAction, secondAction] = context.recommendedActions;
+  const actionLine = firstAction
+    ? `Suggested next action: ${firstAction.label}.${secondAction ? ` I can also ${secondAction.label.toLowerCase()}.` : ""}`
+    : "No follow-up action is available with the currently selected tools.";
   const normalizedQuestion = question.toLowerCase();
   const firstDocument = context.documents?.[0];
   if (asksForWorkbookReview(question)) {
@@ -84,7 +87,7 @@ ${firstDocument.recentChanges.map((change) => `- ${change.timestamp} · ${change
 Current register rows:
 ${firstDocument.rows.map((row) => `- ${row.key}: ${row.status}. ${row.evidence} Owner: ${row.owner}; next review: ${row.nextReview}.`).join("\n")}
 
-Suggested next action: ${firstAction.label}.${secondAction ? ` I can also ${secondAction.label.toLowerCase()}.` : ""}
+${actionLine}
 
 This response is running in demo mode with sample application data. Add a real OPENAI_API_KEY to enable model-generated analysis.`;
   }
@@ -104,9 +107,9 @@ This response is running in demo mode with sample application data. Add a real O
 
 ${context.answer.summary}${financialNote}
 
-I checked ${context.activity.map((step) => step.tool).join(", ")}. The detailed tool activity and source records are available in the audit panel.
+I checked ${context.activity.map((step) => step.tool).join(", ")}. The detailed tool activity and findings are available below.
 
-Suggested next action: ${firstAction.label}.${secondAction ? ` I can also ${secondAction.label.toLowerCase()}.` : ""}
+${actionLine}
 
 This response is running in demo mode with sample application data. Add a real OPENAI_API_KEY to enable model-generated analysis.`;
 }

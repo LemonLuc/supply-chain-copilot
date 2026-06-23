@@ -30,9 +30,9 @@ export function resolveWorkflowForPrompt(prompt: string, personaValue?: unknown)
   const policy = getPersonaPolicy(personaValue);
   const normalizedPrompt = prompt.toLowerCase();
   const candidates: Array<[WorkflowKey, string[]]> = [
-    ["consolidate", ["heat map", "heatmap", "consolidate", "portfolio", "tail-spend", "resilience"]],
+    ["consolidate", ["heat map", "heatmap", "consolidate", "portfolio", "tail-spend", "resilience", "savings", "relationship", "relationships", "board", "contract termination"]],
     ["delay", ["alternative", "alternatives", "alternate", "turret", "supplier overview", "supplier risk", "capacity register", "delayed", "delay"]],
-    ["risks", ["risk", "delivery", "shipment", "carrier", "milestone", "freight", "fedex", "dhl"]],
+    ["risks", ["risk", "delivery", "shipment", "carrier", "milestone", "freight", "fedex", "dhl", "ups", "pickup"]],
   ];
   const match = candidates.find(([workflowKey, keywords]) =>
     policy.allowedWorkflows.includes(workflowKey) && keywords.some((keyword) => normalizedPrompt.includes(keyword)),
@@ -43,8 +43,7 @@ export function resolveWorkflowForPrompt(prompt: string, personaValue?: unknown)
 
 const sourceActivityTokens: Record<string, string[]> = {
   sap: ["SAP"],
-  dhl: ["DHL"],
-  fedex: ["FedEx"],
+  carriers: ["Shipping"],
   warehouse: ["EWM"],
   quality: ["Quality"],
   excel: ["SharePoint"],

@@ -6,11 +6,14 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  Clock3,
+  Copy,
   Database,
   ExternalLink,
   FileCheck2,
   ListChecks,
   Mail,
+  Moon,
   RotateCcw,
   Send,
   Settings2,
@@ -117,9 +120,50 @@ function AiMark() {
   );
 }
 
-function actionReviewer(workflowKey: WorkflowKey, action: WorkflowAction): PersonaId {
-  if (workflowKey === "consolidate" || action.kind === "approval") return "executive";
-  return "procurement";
+const personaRecommendations: Record<PersonaId, Array<{ label: string; source: string }>> = {
+  logistics: [
+    { label: "Open DHL tracking delay for N-FK5 shipment", source: "Shipping providers" },
+    { label: "Check Oberkochen receiving buffer", source: "EWM warehouse" },
+    { label: "Review PO 4500872319 promised date", source: "SAP S/4HANA" },
+  ],
+  procurement: [
+    { label: "Review MT-440B alternate reservation", source: "Supplier capacity portal" },
+    { label: "Check supplier risk register changes", source: "SharePoint workbook" },
+    { label: "Prepare Lucia exception review note", source: "Outlook" },
+  ],
+  executive: [
+    { label: "Open consolidation opportunity heat map", source: "Resilience signals" },
+    { label: "Review contract notice windows", source: "Contract repository" },
+    { label: "Check savings guardrails for protected categories", source: "Procurement policy" },
+  ],
+};
+
+const personaPromptSets: Record<PersonaId, string[]> = {
+  logistics: [
+    "Show me potential delivery risks for this week.",
+    "Check whether any carrier milestone changed overnight.",
+    "Which shipments need pickup confirmation before noon?",
+    "Create a Monday follow-up plan for delayed freight.",
+  ],
+  procurement: [
+    "What approved alternates can cover the delayed turret assemblies?",
+    "Which production orders can use an approved alternate turret?",
+    "Assign the carrier recovery check for the uncovered builds.",
+    "Which supplier decision needs Lucia Lopez's review?",
+  ],
+  executive: [
+    "Show supplier consolidation options with cost and resilience tradeoffs.",
+    "Which supplier relationships should we consolidate without weakening resilience?",
+    "Where can we capture savings while protecting strategic supply continuity?",
+    "Draft a board-level decision record for supplier consolidation.",
+  ],
+};
+
+function actionReviewer(persona: PersonaId, action: WorkflowAction): PersonaId | null {
+  if (action.kind !== "approval") return null;
+  if (persona === "logistics") return "procurement";
+  if (persona === "procurement") return "executive";
+  return null;
 }
 
 function approvalStatusText(request: ApprovalRequest) {
@@ -143,21 +187,28 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
   const [activePrompt, setActivePrompt] = useState("");
   const [sourceSelection, setSourceSelection] = useState<Record<string, boolean>>({});
   const [approvalRequests, setApprovalRequests] = useState<ApprovalRequest[]>([]);
+  const [copiedMessageId, setCopiedMessageId] = useState("");
+  const [recommendationNotice, setRecommendationNotice] = useState("");
+  const [localDateTime] = useState(() =>
+    new Intl.DateTimeFormat("en-GB", {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone: "Europe/Berlin",
+    }).format(new Date()),
+  );
   const latestMessageRef = useRef<HTMLDivElement | null>(null);
   const transport = useMemo(() => new DefaultChatTransport({ api: "/api/chat" }), []);
   const { messages, sendMessage, status, error, stop, setMessages, clearError } = useChat({ transport });
   const activeUser = mockUsers[persona];
   const personaPolicy = getPersonaPolicy(persona);
   const roleToolSources = useMemo(() => buildRoleToolSources(persona), [persona]);
-  const suggestedPrompts = useMemo(
-    () => personaPolicy.allowedWorkflows.flatMap((key) => workflows[key].suggestedPrompts),
-    [personaPolicy.allowedWorkflows],
-  );
+  const suggestedPrompts = personaPromptSets[persona];
   const selectedToolCount = useMemo(
     () => roleToolSources.filter((source) => sourceIsSelected(source.toolId, source.selected)).length,
     [roleToolSources, sourceSelection],
   );
   const isBusy = status === "submitted" || status === "streaming";
+  const canShowResults = hasRun && !isBusy;
   const selectedSourceIds = useMemo(
     () => getSelectedSourceIdsForWorkflow(workflowKey),
     [sourceSelection, roleToolSources, workflowKey],
@@ -188,6 +239,7 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
     setActionNotice("");
     setActionMenuOpen(false);
     setActivePrompt("");
+    setRecommendationNotice("");
     setMessages([]);
     clearError();
   }
@@ -219,15 +271,40 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
     );
   }
 
+  async function copyAnswer(message: UIMessage) {
+    const text = messageText(message);
+    if (!text) return;
+
+    await navigator.clipboard?.writeText(text);
+    setCopiedMessageId(message.id);
+    window.setTimeout(() => setCopiedMessageId((current) => (current === message.id ? "" : current)), 1800);
+  }
+
+  function openRecommendedSource(source: string) {
+    setRecommendationNotice(`Opening ${source} from Oberkochen HQ...`);
+  }
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void submitPrompt(input);
   }
 
   function runAction(action: WorkflowAction) {
-    const reviewerPersona = actionReviewer(workflowKey, action);
-    const reviewer = mockUsers[reviewerPersona];
     const requester = mockUsers[persona];
+    const reviewerPersona = actionReviewer(persona, action);
+    if (!reviewerPersona) {
+      const actionLabel =
+        action.kind === "draft"
+          ? "Draft prepared"
+          : action.kind === "share"
+            ? "Mandate prepared"
+            : "Action staged";
+      setActionMenuOpen(false);
+      setActionNotice(`${actionLabel} for ${requester.name}. ${action.detail}`);
+      return;
+    }
+
+    const reviewer = mockUsers[reviewerPersona];
     const evidence = appContext.rows.length
       ? appContext.rows.map((row) => `${row.subject}: ${row.evidence}`).join(" ")
       : appContext.answer.summary;
@@ -271,6 +348,10 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
   return (
     <main className="app-shell" data-theme={theme}>
       <section className="workspace">
+        <div className="top-datetime">
+          <Clock3 aria-hidden="true" />
+          <span>{localDateTime} · Oberkochen HQ</span>
+        </div>
         <header className="workspace-header">
           <div className="app-title">
             <AiMark />
@@ -304,13 +385,30 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
               onClick={() => setTheme((current) => (current === "light" ? "dark" : "light"))}
             >
               <span className="theme-switch-track" aria-hidden="true">
-                <span className="theme-switch-thumb" />
+                <span className="theme-switch-thumb"><Moon aria-hidden="true" /></span>
               </span>
             </button>
           </section>
         </header>
 
-        <section className="chat-panel" aria-label="Ask Supply Chain Hub">
+        <section className="recommendations-box" aria-label="Recommended for you">
+          <div className="recommendations-heading">
+            <h2>Recommended for you</h2>
+          </div>
+          <ul>
+            {personaRecommendations[persona].map((item) => (
+              <li key={item.label}>
+                <button type="button" onClick={() => openRecommendedSource(item.source)}>
+                  <span>{item.label}</span>
+                  <small>{item.source}</small>
+                </button>
+              </li>
+            ))}
+          </ul>
+          {recommendationNotice && <p className="recommendation-notice" role="status">{recommendationNotice}</p>}
+        </section>
+
+        <section className={`chat-panel ${hasRun ? "has-run" : ""}`} aria-label="Ask Supply Chain Hub">
           <div className="chat-toolbar">
             <div>
               <span className="context-line">
@@ -397,7 +495,14 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
                   key={message.id}
                   ref={message.id === messages[messages.length - 1]?.id ? latestMessageRef : undefined}
                 >
-                  <span>{message.role === "user" ? "You" : "Supply Chain Hub"}</span>
+                  <div className="message-heading">
+                    <span>{message.role === "user" ? "You" : "Supply Chain Hub"}</span>
+                    {message.role === "assistant" && messageText(message) && (
+                      <button type="button" onClick={() => void copyAnswer(message)} aria-label="Copy answer" title="Copy answer">
+                        {copiedMessageId === message.id ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
+                      </button>
+                    )}
+                  </div>
                   {message.role === "assistant" && <ReasoningSummary message={message} />}
                   {messageText(message) &&
                     (message.role === "assistant" ? (
@@ -411,7 +516,7 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
             </div>
           )}
 
-          {hasRun && appContext.recommendedActions.length > 0 && (
+          {canShowResults && appContext.recommendedActions.length > 0 && (
             <section className="chat-action-menu" aria-label="Agentic follow-up actions">
               <button
                 className="action-menu-toggle"
@@ -537,23 +642,8 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
           </section>
         )}
 
-        {hasRun && (
+        {canShowResults && (
           <section className="results" aria-label="Supply Chain Hub results">
-            <div className="result-grid">
-              <article className="result-summary">
-                <p className="eyebrow">Operational answer</p>
-                <h3>{appContext.answer.headline}</h3>
-                <p>{appContext.answer.summary}</p>
-                <div className="metric-strip">
-                  {appContext.answer.metrics.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}
-                  {personaPolicy.canViewFinancials && appContext.answer.financialMetrics?.map(([label, value]) => (
-                    <div className="financial-metric" key={label}><span>{label}</span><strong>{value}</strong></div>
-                  ))}
-                </div>
-              </article>
-
-            </div>
-
             {appContext.decisionSupport?.heatMap && (
               <section className="heatmap-section">
                 <div className="section-title">
@@ -574,25 +664,26 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
 
             <section className="records-section">
               <div className="section-title">
-                <div><p className="eyebrow">Grounded records</p><h3>Evidence returned by authorized tools</h3></div>
-                <span className="source-note"><Database aria-hidden="true" />Synthetic demo records</span>
+                <div><h3>Findings</h3></div>
               </div>
               <div className="records-table-wrap">
-                <table className="records-table" aria-label="Synthetic demo records">
+                <table className="records-table" aria-label="Supply Chain Hub findings">
                   <thead>
                     <tr>
-                      <th scope="col">Record</th>
+                      <th scope="col">Affected material</th>
                       <th scope="col">Status</th>
-                      <th scope="col">Evidence</th>
-                      {personaPolicy.canViewFinancials && <th scope="col">Financial</th>}
+                      <th scope="col">Expected arrival</th>
+                      <th scope="col">Production buffer</th>
+                      {personaPolicy.canViewFinancials && <th scope="col">Financial impact</th>}
                     </tr>
                   </thead>
                   <tbody>
                     {appContext.rows.map((row) => (
                       <tr key={row.subject}>
-                        <td><strong>{row.subject}</strong><span>{row.detail}</span></td>
+                        <td><strong>{row.affectedMaterial ?? row.detail}</strong><span>{row.subject}</span></td>
                         <td><span className={`status-chip status-${row.status.toLowerCase().replaceAll(" ", "-")}`}>{row.status}</span></td>
-                        <td>{row.evidence}</td>
+                        <td>{row.expectedArrival ?? row.evidence}</td>
+                        <td>{row.productionBuffer ?? row.evidence}</td>
                         {personaPolicy.canViewFinancials && (
                           <td>{"financial" in row && row.financial && <strong className="financial-value">{row.financial}</strong>}</td>
                         )}

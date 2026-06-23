@@ -77,7 +77,7 @@ describe("POST /api/chat", () => {
     expect(response.status).toBe(400);
   });
 
-  it("uses the server-derived procurement identity", async () => {
+  it("uses the server-derived procurement identity without financial elevation", async () => {
     process.env.OPENAI_API_KEY = "sk-sample-replace-me";
     process.env.DEMO_USER_ROLE = "procurement";
     const request = new Request("http://localhost/api/chat", {
@@ -99,7 +99,8 @@ describe("POST /api/chat", () => {
     const response = await POST(request);
     const stream = await response.text();
 
-    expect(stream).toContain("€185,000");
+    expect(stream).not.toContain("€185,000");
+    expect(stream).toContain("not available to your signed-in role");
   });
 
   it("does not trust a browser persona to elevate access", async () => {
@@ -206,7 +207,7 @@ describe("POST /api/chat", () => {
           },
         ],
         workflowKey: "risks",
-        selectedSourceIds: ["dhl"],
+        selectedSourceIds: ["carriers"],
       }),
     });
 
@@ -215,12 +216,10 @@ describe("POST /api/chat", () => {
 
     expect(response.status).toBe(200);
     expect(systemPrompt).toContain('"selectedAuthorizedSources"');
-    expect(systemPrompt).toContain('"id": "dhl"');
-    expect(systemPrompt).toContain("DHL Freight MCP");
+    expect(systemPrompt).toContain('"id": "carriers"');
+    expect(systemPrompt).toContain("Shipping providers MCP");
     expect(systemPrompt).toContain("PO 4500872319");
-    expect(systemPrompt).not.toContain('"id": "fedex"');
-    expect(systemPrompt).not.toContain("FedEx MCP");
-    expect(systemPrompt).not.toContain("PO 4500872481");
+    expect(systemPrompt).toContain("PO 4500872481");
   });
 
   it("returns selected SharePoint workbook data for Dana without asking the live model to infer access", async () => {

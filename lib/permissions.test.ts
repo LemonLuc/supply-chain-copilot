@@ -19,7 +19,7 @@ describe("persona permissions", () => {
 
   it("grants procurement access while preserving executive approval gates", () => {
     expect(getPersonaPolicy("procurement")).toEqual({
-      canViewFinancials: true,
+      canViewFinancials: false,
       allowedWorkflows: ["risks", "delay"],
     });
   });
@@ -27,9 +27,11 @@ describe("persona permissions", () => {
   it("reserves the executive supplier portfolio for the Chief Logistics Officer", () => {
     expect(getPersonaPolicy("executive")).toEqual({
       canViewFinancials: true,
-      allowedWorkflows: ["risks", "delay", "consolidate"],
+      allowedWorkflows: ["consolidate"],
     });
     expect(canAccessWorkflow("procurement", "consolidate")).toBe(false);
+    expect(canAccessWorkflow("executive", "risks")).toBe(false);
+    expect(canAccessWorkflow("executive", "delay")).toBe(false);
     expect(canAccessWorkflow("executive", "consolidate")).toBe(true);
   });
 
