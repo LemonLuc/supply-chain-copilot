@@ -463,6 +463,7 @@
 .customer-slide .split-60 {
   align-items: start;
   gap: 56px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-top: 14px;
   width: min(100%, 940px);
 }
@@ -1617,4 +1618,49 @@
 .slidev-slide-number,
 .slidev-pagination {
   display: none !important;
+}
+
+.print-slide-container .nutshell-thesis,
+.print-slide-container .nutshell-cards > div,
+.print-slide-container .tldr-main,
+.print-slide-container .tldr-stack > div,
+.print-slide-container .three-lanes div,
+.print-slide-container .split-60 > div,
+.print-slide-container .signal-flow div,
+.print-slide-container .surface-pair div,
+.print-slide-container .layer-stack div,
+.print-slide-container .solution-grid div,
+.print-slide-container .process-line > div:not(.process-arrow),
+.print-slide-container .workflow-proof div,
+.print-slide-container .demo-time-main,
+.print-slide-container .demo-time-list div,
+.print-slide-container .roi-grid div,
+.print-slide-container .metric-row div,
+.print-slide-container .scorecard-grid div,
+.print-slide-container .rollout-grid div,
+.print-slide-container .build-grid div,
+.print-slide-container .problem-strip div,
+.print-slide-container .tool-grid div,
+.print-slide-container .expansion-grid div,
+.print-slide-container .closing-path > div:not(.closing-arrow),
+.print-slide-container .demo-card,
+.print-slide-container .callout,
+.print-slide-container .roi-equation,
+.print-slide-container .consequence-band,
+.print-slide-container .workflow-example,
+.print-slide-container .model-band div,
+.print-slide-container .before-after div,
+.print-slide-container .scorecard-thesis,
+.print-slide-container .validation-panel,
+.print-slide-container .criteria-panel,
+.print-slide-container .poc-note,
+.print-slide-container .timeline-kicker,
+.print-slide-container .flow-map > div:not(.flow-arrow),
+.print-slide-container .workflow-takeaway div,
+.print-slide-container .timeline div,
+.print-slide-container .arch-zone,
+.print-slide-container .arch-rail,
+.print-slide-container .arch-subgrid > div {
+  background: #fff !important;
+  box-shadow: none !important;
 }
