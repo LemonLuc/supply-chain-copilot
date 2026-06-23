@@ -2,21 +2,21 @@
 
 Executive Business Value
 
-**0:00-0:45 - Slide 5, Camera Visible**
+**0:00-1:00 - Model Overview, Camera Visible**
 
-Meet Supply Chain Hub: the enterprise decision interface for moving from fragmented supply-chain signals to governed action.
+Hello, I am Lucie, OpenAI Solutions Engineer, and I am delighted to present Supply Chain Hub, a tool built for Carl Zeiss AG.
 
-This tool is built for supply-chain leaders, logistics planners, and procurement teams who need one trusted view of operational risk. The pain is that the same disruption is usually split across SAP, carrier updates, warehouse stock, supplier context, documents, and email. Teams spend time reconstructing the truth before they can act.
+Supply Chain Hub is designed for ZEISS supply-chain leaders, logistics planners, and procurement teams who need one trusted view of operational risk. The pain it solves is very practical: one customer-impacting disruption is often split across SAP, carrier updates, warehouse stock, supplier context, documents, and email. Before teams can act, they first have to reconstruct what is true.
 
-Slide 5 frames the solution: an executive-grade conversation surface, a governed operating model, and an integration layer that connects ZEISS systems, documents, business tools, and workflow actions while keeping sources of truth up to date.
+This model shows the operating idea behind the tool. Supply Chain Hub is the conversation layer for asking questions and reviewing evidence. The intelligence layer turns those questions into options and next steps. Operating controls keep roles, sources, masking, and review paths clear. And ZEISS systems remain the sources of truth.
 
-We are starting at the proposal view, and now I will show the workflow behind it: from a delivery-risk question to evidence, action, and human review.
+In the next few minutes I will show one workflow: from a delivery-risk question, to evidence, to action. The full onsite demo goes much deeper, but this should make the business purpose clear.
 
-**0:45-5:15 - Live Tool, Camera Hidden**
+**1:00-5:15 - Live Tool, Camera Hidden**
 
-I start with settings. A new user can configure which tools are available: SAP for purchase orders and material data, shipping providers for DHL and FedEx milestones, EWM warehouse for stock, and Outlook for follow-up actions.
+Here we are in the Supply Chain Hub tool. I start at the top with the recommendations. These are shortcuts into work that matters right now: open the DHL tracking delay for the N-FK5 shipment, check the Oberkochen receiving buffer, or review the purchase order promised date. This is useful because the tool is not waiting for the user to know exactly where to click. It surfaces the next likely investigation paths.
 
-I keep SAP, carrier data, and warehouse stock selected, and I enable Outlook because I want the workflow to move from analysis into controlled follow-up. This is the key design point: the model does not get everything. It gets the approved sources for this user, this role, and this decision.
+Next I open settings. A new user can configure which tools are available: SAP for purchase orders and material data, shipping providers for DHL and FedEx milestones, EWM warehouse for stock, and Outlook for follow-up actions. I keep SAP, carrier data, and warehouse stock selected, and I enable Outlook because I want the workflow to move from analysis into controlled follow-up. This is the key design point: the model does not get everything. It gets the approved sources for this user, this role, and this decision.
 
 Now I ask the tool: "Show me potential delivery risks for this week."
 
@@ -26,7 +26,7 @@ Just as important, the answer includes the operational implication: current stoc
 
 The records section makes the recommendation auditable. The DHL shipment is flagged for attention. The FedEx priority shipment is still on schedule and protects the line start. The finding is tied to source evidence the user can review.
 
-For executives, this is the difference between another dashboard and a decision tool. The interface resolves the context: what changed, what is exposed, what still protects us, and what should happen next.
+For executives, this is the difference between another dashboard and a decision tool. The interface resolves the context: what changed, what is exposed, what still protects us, and what should happen next. And it does that in a language interface, not by asking every function to open five different systems.
 
 Now I, as Lukas Weber, Logistics Planner, trigger the operational next step. From the Actions menu, I can request DHL recovery routing, create an Outlook recovery task to track DHL confirmation, FedEx backup status, and the Oberkochen receiving cutoff before noon, or write Dana Narid, the procurement team lead, for review. I can also log the DHL exception on the purchase order while holding any promised-date change until the recovery ETA is confirmed.
 
@@ -34,14 +34,12 @@ For this walkthrough, I choose the Outlook recovery task.
 
 This is human in the loop by design. Supply Chain Hub stages actions and routes approval. It packages the recommendation, evidence, owner, and next step so the responsible human can decide quickly and with context.
 
-That is the business value of the workflow: one operational question becomes an evidence-backed recommendation and a controlled action path.
+And this is only one path through the tool. In the full demo, we can also explore role-based views, workbook grounding, approval queues, supplier alternatives, and executive portfolio decisions. The same pattern repeats: ask, ground, reason, act.
 
 **5:15-6:00 - Slide 6, Camera Visible**
 
-Back on Slide 6, this is the architecture behind what we just saw. Supply Chain Hub is the conversation layer. The intelligence layer turns questions into options and next steps. Operating controls keep roles, sources, masking, and review paths clear, while ZEISS systems remain the sources of truth.
-
-The pattern is ground, reason, act: pull context, compare trade-offs, then route recommendations. OpenAI fits through the Responses API for grounded answers and the Agents SDK for tool-backed workflows and reviewer handoffs.
+Coming back to the model, this is why the architecture matters. The tool does not replace ZEISS systems. It gives teams a governed decision layer on top of them. OpenAI fits through the Responses API for grounded answers and the Agents SDK for tool-backed workflows and reviewer handoffs.
 
 We saw one DHL delivery exception. But what lands on Dana Narid's desk next? Does her decision recover one shipment, or change how ZEISS measures DHL reliability? And if recovery fails, which alternate supplier, production, or executive workflow fires next?
 
-That is the story I will continue onsite at ZEISS HQ in Oberkochen next week.
+That is the story I will continue in the full onsite demo at ZEISS HQ in Oberkochen next week.

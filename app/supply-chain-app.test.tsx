@@ -566,10 +566,10 @@ describe("SupplyChainApp", () => {
     fireEvent.click(screen.getByRole("button", { name: /Create Outlook recovery task/i }));
 
     expect(await screen.findByText("My tasks")).toBeInTheDocument();
-    expect(screen.getByText("Create Outlook recovery task")).toBeInTheDocument();
+    expect(screen.getByText("Track DHL confirmation, FedEx backup status and Oberkochen receiving cutoff with Supply Chain Hub")).toBeInTheDocument();
     expect(screen.queryByText("Approval queue")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /Mark Create Outlook recovery task done/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Mark Track DHL confirmation, FedEx backup status and Oberkochen receiving cutoff with Supply Chain Hub done/i }));
 
     expect(screen.getByText("Done")).toBeInTheDocument();
   });

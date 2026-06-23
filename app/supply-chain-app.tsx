@@ -186,6 +186,14 @@ function heatMapDecision(item: { cost: string; resilience: string; recommendatio
   return "Review";
 }
 
+function personalTaskTitle(action: WorkflowAction) {
+  if (action.label === "Create Outlook recovery task") {
+    return "Track DHL confirmation, FedEx backup status and Oberkochen receiving cutoff with Supply Chain Hub";
+  }
+
+  return action.label;
+}
+
 export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
   const [persona, setPersona] = useState<PersonaId>(currentUser.persona);
   const [workflowKey, setWorkflowKey] = useState<WorkflowKey>("risks");
@@ -320,7 +328,7 @@ export function SupplyChainApp({ currentUser }: { currentUser: CurrentUser }) {
           ...current,
           {
             id: `task-${crypto.randomUUID()}`,
-            actionLabel: action.label,
+            actionLabel: personalTaskTitle(action),
             workflowKey,
             ownerPersona: persona,
             detail: action.detail,
